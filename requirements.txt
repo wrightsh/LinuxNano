@@ -1,6 +1,5 @@
 attrs==19.3.0
 importlib-metadata==1.1.0
--e git+git@github.com:wrightsh/LinuxNano.git@8f8f643ec6b79a930edfd86b98ef67fdb3e97244#egg=LinuxNano
 more-itertools==8.0.0
 numpy==1.17.4
 packaging==19.2
