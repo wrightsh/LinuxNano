@@ -1,0 +1,10 @@
+<root>
+    <Tool_Node description="for testing" name="[Awesome Tool">
+        <System_Node description="Main Chamber" name="Chamber A" backgroundSVG="/media/psf/linuxNano/resources/icons/evaporator_background.svg">
+            <Device_Node description="A pressure switch" name="Atmo Gauge">
+                <Digital_Input_Node description="Terminal block X" name="Power" stateTableData="[['state', 'gui_name'], [0, 'oOff'], [1, 'On']]"/> 
+                <Digital_Input_Node description="Terminal block X" name="Door" stateTableData="[['state', 'gui_name'], [0, 'oOff'], [1, 'On']]"/>
+            </Device_Node>
+        </System_Node>
+    </Tool_Node>
+</root>
