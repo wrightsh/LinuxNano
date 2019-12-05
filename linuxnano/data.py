@@ -17,7 +17,6 @@ import queue
 
 from linuxnano.strings import strings
 from linuxnano.message_box import MessageBox
-
 from linuxnano.device_state_table_model import DeviceStateTableModel
 
 from linuxnano.digital_state_table_model import DigitalStateTableModel
