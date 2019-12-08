@@ -1,37 +1,31 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtGui, QtCore, QtSvg, QtWidgets
-import strings
-
+from linuxnano.strings import strings
+import xml.etree.ElementTree as ET
 
 class DeviceIconWidget(QtWidgets.QWidget):
-    def __init__(self,  svg):
-        super().__init__(parent)
+    def __init__(self, svg, selection_call=None, index=None):
+        super().__init__()
 
         self._svg = svg
+        self._selection_call = selection_call
+        self._index = index
         self._layer = ''
         self._hovering      = False
         self._selected      = False
 
+        #Set the layer to the first one as default
+        xml = ET.parse(self._svg)
+        svg = xml.getroot()
+        self._layer = svg[0].attrib['id']
 
-        #self._index = index
-        #icon_node   = index.internalPointer()
-        #self._svg_file = icon_node.iconSVG
-
-        #self._layers          = ['normal', 'normal-selected'] #QtCore.QLatin1String('normal')
-
-        #self._current_state = 0
-        #self._layer = self._layers[self._current_state]
-        #self._hovering      = False
-        #self._selected      = False
-
-
-    #TODO do we need a new painter and renderer each time?
     def paintEvent(self, event):
         painter  = QtGui.QPainter(self)
+        painter.begin(self)
         renderer = QtSvg.QSvgRenderer(self._svg)
         bounding_rect = renderer.boundsOnElement(self._layer)
 
-        painter.fillRect(event.rect(), QtGui.QBrush(QtCore.Qt.blue))
+        #painter.fillRect(event.rect(), QtGui.QBrush(QtCore.Qt.blue))
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         self.setGeometry(0,0,bounding_rect.width(), bounding_rect.height())
         renderer.render(painter, self._layer, bounding_rect)
@@ -44,23 +38,23 @@ class DeviceIconWidget(QtWidgets.QWidget):
             painter.setPen(QtGui.QPen(QtGui.QBrush(QtCore.Qt.cyan), 4, QtCore.Qt.SolidLine))
             painter.drawRect(bounding_rect)
 
+        painter.end()
         event.accept()
 
     def mouseDoubleClickEvent(self, event):
-        print('double click event')
         event.accept()
 
     def mouseReleaseEvent(self, event):
-        print('mouse release event')
+        self.setSelected()
+        self._selection_call(self._index)
         event.accept()
 
     def mousePressEvent(self, event):
-        print('it was clicked so send that signal to the parent')
         event.accept()
 
     def setSelected(self):
         self._selected = True
-        self.repaint()
+        self.update()#self.repaint()
 
     def clearSelected(self):
         self._selected = False
@@ -68,14 +62,12 @@ class DeviceIconWidget(QtWidgets.QWidget):
 
     def enterEvent(self, event):
         self._hovering = True
-        print('entered bounding box')
-        self.repaint()
+        self.update()#self.repaint()
         event.accept()
 
     def leaveEvent(self, event):
         self._hovering = False
-        print('leave bounding box')
-        self.repaint()
+        self.update()#self.repaint()
         event.accept()
 
     def getLayer(self):
@@ -84,17 +76,4 @@ class DeviceIconWidget(QtWidgets.QWidget):
     def setLayer(self, new_layer):
         self._layer = new_layer
         self.repaint()
-
-    current_state = QtCore.pyqtProperty(int,fget=getLyaer, fset=setLayer)
-
-    #def getCurrentState(self):
-    #    print('in deep  ', str(self._current_state))
-    #    return self._current_state
-#
-    #def setCurrentState(self, new_state):
-    #    self._current_state = new_state
-    #    self._current_layer = self._layers[self._current_state]
-    #    self.repaint()
-#
-#
-    #current_state = QtCore.pyqtProperty(int,fget=getCurrentState, fset=setCurrentState)
+    layer = QtCore.pyqtProperty('QString',fget=getLayer, fset=setLayer)

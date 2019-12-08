@@ -226,7 +226,7 @@ class ToolModel(QtCore.QAbstractItemModel):
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """INPUTS: QModelIndex, QVariant, int (flag)"""
-
+        print('setData')
         if type(value) == type(QtCore.QVariant()):
             value = value.toPyObject()
 
@@ -282,19 +282,27 @@ class ToolModel(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
 
 
-    #TODO: Does this need to get added?
-    #def systemIcons(self, index):
+    def systemIcons(self, index):
+        node = index.internalPointer()
+        icon_children = []
+
+        if node.typeInfo() == strings.SYSTEM_NODE:
+            for device_child in node.children():
+                for child in device_child.children():
+                    if child.typeInfo() == strings.DEVICE_ICON_NODE:
+                        if index.isValid():
+                            icon_children.append(self.createIndex(child.row(), 0, child))
+
+        return icon_children
+
+
+    #def deviceIconIndex(self, index):
     #    node = index.internalPointer()
-    #    icon_children = []
-
-    #    if node.typeInfo() == strings.SYSTEM_NODE:
-    #        for device_child in node.children():
-    #            for child in device_child.children():
+    #    if node.typeInfo() == strings.DEVICE_NODE:
+    #            for child in node.children():
     #                if child.typeInfo() == strings.DEVICE_ICON_NODE:
-    #                    if index.isValid():
-    #                        icon_children.append(self.createIndex(child.row(), 0, child))
+    #                    return self.createIndex(row?????,)
 
-    #    return icon_children
 
 
         #if role == SceneGraphModel.sortRole:

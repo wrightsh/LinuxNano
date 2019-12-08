@@ -301,6 +301,8 @@ class DeviceNode(Node):
 
         self._device_state_table_model = DeviceStateTableModel()
 
+        self._icon_layer = 'fault'
+        self._icon_value = '1.0'
         #self._current_state = 0
         # should this exist?
         #self._io_bits = 0
@@ -370,6 +372,8 @@ class DeviceNode(Node):
         r = super().data(column)
 
         if   column is 10: r =  self.status
+        elif column is 11: r =  self._icon_layer #Will want to transmit the name for mapping this for manual icon view
+        elif column is 12: r =  self._icon_value
         elif column is 15: r =  self._device_state_table_model
         #elif column is 16: r =  self.currentState()
         return r
@@ -378,6 +382,8 @@ class DeviceNode(Node):
         super().setData(column, value)
 
         if   column is 10: pass#self.status = value
+        elif column is 11: self._icon_layer = str(value)
+        elif column is 12: pass
         elif column is 15: pass
         #elif column is 16: self.setCurrentState(value)
 
@@ -409,8 +415,10 @@ class DeviceNode(Node):
         return locals()
     deviceStateTableData = property(**deviceStateTableData())
 
-
-
+    def iconNode(self):
+        for i, child in enumerate(self.children()):
+            if child.typeInfo() == strings.DEVICE_ICON_NODE:
+                return child
 
 
 
@@ -700,7 +708,9 @@ class DeviceIconNode(Node):
         r = super().data(column)
 
         if   column is 10: r = self.svg
-        elif column is 11: r = self._layer #Will want to transmit the name for mapping this for manual icon view
+        elif column is 11:
+            print("JUST CALL THIS")
+            r = str('fault')#self._layer #Will want to transmit the name for mapping this for manual icon view
         elif column is 14: r = self.x
         elif column is 15: r = self.y
         elif column is 16: r = self.scale

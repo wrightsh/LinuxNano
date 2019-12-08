@@ -32,7 +32,7 @@
          <number>9</number>
         </property>
         <item>
-         <widget class="ToolManualView" name="ui_tool_manual_view"/>
+         <widget class="SystemManualView" name="ui_system_manual_view" native="true"/>
         </item>
        </layout>
       </widget>
@@ -43,7 +43,7 @@
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <widget class="QWidget" name="widget_2" native="true"/>
+          <widget class="QWidget" name="ui_button_group" native="true"/>
           <widget class="QWidget" name="widget" native="true">
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
@@ -80,12 +80,12 @@
   <customwidget>
    <class>ToolTreeView</class>
    <extends>QTreeView</extends>
-   <header>views.widgets.ToolTreeView</header>
+   <header>linuxnano/views/widgets/tool_tree_view</header>
   </customwidget>
   <customwidget>
-   <class>ToolManualView</class>
-   <extends>QTreeView</extends>
-   <header>views.widgets.ToolManualView</header>
+   <class>SystemManualView</class>
+   <extends>QWidget</extends>
+   <header>linuxnano/views/widgets/system_manual_view</header>
   </customwidget>
  </customwidgets>
  <resources/>

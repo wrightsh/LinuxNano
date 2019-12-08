@@ -1,0 +1,40 @@
+<root>
+  <Tool_Node description='for testing' name='Second Tool'>
+    <System_Node description='Main Chamber' name='Chamber A' backgroundSVG='linuxnano/resources/icons/evaporator_background.svg'>
+      <Device_Node
+        name='Simple Valve'
+        description='a valve'
+        deviceStateTableData="[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message',
+        'triggers_action', 'action_timeout', 'action', 'log_entrance'],
+
+
+        [0, 'Open'  , 'open'  , False, 0, '', False, 0, '', False, 0, None, True],
+        [1, 'Closed', 'closed', False, 0, '', False,0, '', False, 0, None, True]]"
+
+
+        >
+
+        <Device_Icon_Node svg='linuxnano/resources/icons/valves/valve.svg' x='0' y='125' scale='1.0' rotation='0' numberNode='Pressure' numberX='40' numberY='0'/>
+        <Digital_Output_Node description='Opens the valve' name='Output' stateTableData="[['state', 'gui_name','is_used'], [0, 'Open',True], [1, 'Close',True]]"/>
+      </Device_Node>
+    </System_Node>
+    <System_Node description='Process chamber' name='Chamber B' backgroundSVG='linuxnano/resources/icons/evaporator_background.svg'>
+      <Device_Node
+        name='Valve'
+        description='a valve'
+        deviceStateTableData="[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message',
+        'triggers_action', 'action_timeout', 'action', 'log_entrance'],
+
+
+        [0, 'Open'  , 'open'  , False, 0, '', False, 0, '', False, 0, None, True],
+        [1, 'Closed', 'closed', False, 0, '', False,0, '', False, 0, None, True]]"
+
+
+        >
+
+        <Device_Icon_Node svg='linuxnano/resources/icons/valves/valve.svg' x='125' y='125' scale='1.0' rotation='0' numberNode='Pressure' numberX='40' numberY='0'/>
+        <Digital_Output_Node description='Opens the valve' name='Output' stateTableData="[['state', 'gui_name','is_used'], [0, 'Open',True], [1, 'Close',True]]"/>
+      </Device_Node>
+    </System_Node>
+  </Tool_Node>
+</root>
