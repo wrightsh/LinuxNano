@@ -97,6 +97,9 @@
       <widget class="QWidget" name="ui_digital_inputs" native="true"/>
      </item>
      <item>
+      <layout class="QVBoxLayout" name="ui_wids"/>
+     </item>
+     <item>
       <spacer name="verticalSpacer">
        <property name="orientation">
         <enum>Qt::Vertical</enum>

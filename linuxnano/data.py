@@ -1025,6 +1025,7 @@ class DigitalInputNode(HalNode):
     def __init__(self, parent=None):
         super().__init__(parent)#, state_table_allow_is_used = False)
 
+        self._value = 'Text Value'
         self._state_table_model = DigitalStateTableModel(allow_is_used = False)
         self._state_table_model.dataChanged.connect(self.stateTableChanged)
         self._state_table_model.modelReset.connect(self.stateTableChanged)
@@ -1043,10 +1044,12 @@ class DigitalInputNode(HalNode):
 
     def data(self, column):
         r = super().data(column)
+        if column is 22: r = self._value
         return r
 
     def setData(self, column, value):
         super().setData(column, value)
+        if column is 22: self._value  = value
 
 
 class DigitalOutputNode(HalNode):
@@ -1062,6 +1065,7 @@ class DigitalOutputNode(HalNode):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self._value = 1
         self._manual_display_type = strings.MANUAL_DISPLAY_TYPES.names[0]
 
         self._state_table_model = DigitalStateTableModel(allow_is_used = True)
@@ -1081,14 +1085,19 @@ class DigitalOutputNode(HalNode):
     def numberOfStates(self):
         return self._state_table_model.rowCount()
 
+    def states(self):
+        return self._state_table_model.states()
+
     def data(self, column):
         r = super().data(column)
-        if column is 21: r = strings.MANUAL_DISPLAY_TYPES.names.index(self.manualDisplayType)
+        if   column is 21: r = strings.MANUAL_DISPLAY_TYPES.names.index(self.manualDisplayType)
+        elif column is 22: r = self._value
         return r
 
     def setData(self, column, value):
         super().setData(column, value)
-        if column is 21: self.manualDisplayType = strings.MANUAL_DISPLAY_TYPES.names[value]
+        if   column is 21: self.manualDisplayType = strings.MANUAL_DISPLAY_TYPES.names[value]
+        elif column is 22: self._value  = value
 
 
     def manualDisplayType():
@@ -1130,7 +1139,7 @@ class AnalogInputNode(HalNode):
         self._display_digits     = strings.A_IN_DISPLAY_DIGITS_DEFAULT
         self._display_scientific = False
         self._scale_type         = strings.ANALOG_SCALE_TYPES.names[0]  #Linear or cubic_spline
-
+        self._value = 3.40
 
     def typeInfo(self):
         return strings.A_IN_NODE
@@ -1155,6 +1164,7 @@ class AnalogInputNode(HalNode):
         elif column is 23: r = self.displayDigits
         elif column is 24: r = self.displayScientific
         elif column is 25: r = strings.ANALOG_SCALE_TYPES.names.index(self.scaleType) #FIXME
+        elif column is 30: r = self._value
 
         return r
 
@@ -1167,6 +1177,7 @@ class AnalogInputNode(HalNode):
         elif column is 23: self.displayDigits     = value
         elif column is 24: self.displayScientific = value
         elif column is 25: self.scaleType         = strings.ANALOG_SCALE_TYPES.names[value] #FIXME
+        elif column is 30: self._value            = value
 
 
     def units():

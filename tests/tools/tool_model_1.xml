@@ -69,6 +69,33 @@
           />
         </Device_Node>
 
+        <Device_Node
+          name='MFC 2'
+          description='just an analog output'
+          deviceStateTableData="[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message',
+          'triggers_action', 'action_timeout', 'action', 'log_entrance'],
+
+
+          [0, 'Off' , 'open'  , False, 0, '', False, 0, '', False, 0, None, True],
+          [1, 'On'  , 'closed', False, 0, '', False, 0, '', False, 0, None, True]]"
+
+
+          >
+
+          <Device_Icon_Node svg='linuxnano/resources/icons/valves/valve.svg' x='75' y='75' scale='1.0' rotation='0' numberNode='output' numberX='40' numberY='0'/>
+          <Analog_Input_Node
+            name='input'
+            description='setpoint  0-10vdc'
+            units='sccm'
+            displayDigts='1'
+            displayScientific='False'
+            scaleType='linear'
+            manualDisplayType='slider'
+            stateTableData="[['state','greater_than', 'gui_name'], [0, None, 'Off'], [1, 0.001, 'On']]"
+            calibrationTableData="[['hal_value','gui_value'], [0, 1000], [5, 97.2], [7.5, .01], [10, .000001]]"
+            />
+          </Device_Node>
+
 
 
 
