@@ -43,7 +43,7 @@
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <widget class="QWidget" name="ui_button_group" native="true"/>
+          <widget class="DeviceManualView" name="ui_button_group" native="true"/>
           <widget class="QWidget" name="widget" native="true">
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
@@ -86,6 +86,11 @@
    <class>SystemManualView</class>
    <extends>QWidget</extends>
    <header>linuxnano/views/widgets/system_manual_view</header>
+  </customwidget>
+  <customwidget>
+   <class>DeviceManualView</class>
+   <extends>QWidget</extends>
+   <header>linuxnano/views/widgets/device_manual_view</header>
   </customwidget>
  </customwidgets>
  <resources/>
