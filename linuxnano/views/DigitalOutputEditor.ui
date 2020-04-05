@@ -29,6 +29,20 @@
      <item row="0" column="1">
       <widget class="QComboBox" name="ui_manual_display_type"/>
      </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>HAL Sampler Pin</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="ui_hal_sampler_pin">
+       <property name="text">
+        <string>unknown</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>

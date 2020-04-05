@@ -10,355 +10,150 @@ from linuxnano.flags import TestingFlags
 from linuxnano.digital_state_table_model import DigitalStateTableModel
 
 
-
 def array_print(array):
     print('\n'.join(['\t'.join([str(cell) for cell in row]) for row in array]))
 
 
-@pytest.fixture
-def good_dataArray_data():
 
-    good_data_1 = [['state','gui_name','is_used']]
-    good_data_2 = [['state','gui_name','is_used']]
-    good_data_3 = [['state','gui_name','is_used']]
-    good_data_4 = [['state','gui_name','is_used']]
-    
-    
-    good_data_1 += [[0, "BTN 1", True],
-                    [1 , "BTN 2", True]]
-        
-    good_data_2 += [[0, "BTN 1", True],
-                    [1, "BTN 2", True],
-                    [2, "BTN 3", True],
-                    [3, "BTN 4", True]]
-       
-    good_data_3 += [[0, "BTN 1", True],
-                    [1, "BTN 2", True],
-                    [2, "BTN 3", True],
-                    [3, "BTN 4", True],
-
-                    [4, "BTN 5", True],
-                    [5, "BTN 6", True],
-                    [6, "BTN 7", True],
-                    [7, "BTN 8", True]]
-
-    good_data_4 +=[[0, "BTN 1", True],
-                   [1, "BTN 2", True],
-                   [2, "BTN 3", True],
-                   [3, "BTN 4", True],
-
-                   [4, "BTN 5", True],
-                   [5, "BTN 6", True],
-                   [6, "BTN 7", True],
-                   [7, "BTN 8", True],
-
-                   [8, "BTN 9", True],
-                   [9, "BTN 10", True],
-                   [10, "BTN 11", True],
-                   [11, "BTN 12", True],
-
-                   [12, "BTN 13", True],
-                   [13, "BTN 14", True],
-                   [14, "BTN 15", True],
-                   [15, "BTN 16", True]]
-    
-    return [good_data_1, good_data_2, good_data_3, good_data_4]
 
 @pytest.fixture
-def good_dataArray_data_2():
+def good_states():
+    pins_1 = ['pin_a']
+    pins_2 = ['pin_b','pin_a']
+    pins_3 = ['pin_c','pin_b','pin_a']
+    pins_4 = ['pin_d','pin_c','pin_b','pin_a']
 
-    good_data_1 = [['state','gui_name']]
-    good_data_2 = [['state','gui_name']]
-    good_data_3 = [['state','gui_name']]
-    good_data_4 = [['state','gui_name']]
-    
-    
-    good_data_1 += [[0, "BTN 1",],
-                    [1 , "BTN 2"]]
-        
-    good_data_2 += [[0, "BTN 1",],
-                    [1, "BTN 2",],
-                    [2, "BTN 3",],
-                    [3, "BTN 4",]]
-       
-    good_data_3 += [[0, "BTN 1",],
-                    [1, "BTN 2",],
-                    [2, "BTN 3",],
-                    [3, "BTN 4",],
+    data_1 = ['btn_1', 'btn_2']
+    data_2 = ['btn_1', 'btn_2', 'btn_2', 'btn_4']
+    data_3 = ['btn_1', 'btn_2', 'btn_2', 'btn_4', 'btn_5', 'btn_6', 'btn_7', 'btn_8']
 
-                    [4, "BTN 5",],
-                    [5, "BTN 6",],
-                    [6, "BTN 7",],
-                    [7, "BTN 8",]]
+    data_4 = ['btn_1', 'btn_2', 'btn_2', 'btn_4', 'btn_5', 'btn_6', 'btn_7', 'btn_8',
+              'btn_9', 'btn_10', 'btn_11', 'btn_12', 'btn_13', 'btn_14', 'btn_15', 'btn_16']
 
-    good_data_4 +=[[ 0, "BTN 1"],
-                   [ 1, "BTN 2"],
-                   [ 2, "BTN 3"],
-                   [ 3, "BTN 4"],
+    is_used_1 = [True, True]
+    is_used_2 = [True, True, False, True]
+    is_used_3 = [True, True, False, True, True, True, False, True]
+    is_used_4 = [True, True, False, True, True, True, False, True,
+                 True, True, False, True, True, True, False, True]
 
-                   [ 4, "BTN 5"],
-                   [ 5, "BTN 6"],
-                   [ 6, "BTN 7"],
-                   [ 7, "BTN 8"],
-
-                   [ 8, "BTN 9"],
-                   [ 9, "BTN 10"],
-                   [10, "BTN 11"],
-                   [11, "BTN 12"],
-
-                   [12, "BTN 13"],
-                   [13, "BTN 14"],
-                   [14, "BTN 15"],
-                   [15, "BTN 16"]]
-    
-    return [good_data_1, good_data_2, good_data_3, good_data_4]
-
-@pytest.fixture
-def bad_dataArray_data(): 
-
-    bad_data_1 = [['state','gui_name','is_used']]
-    bad_data_2 = [['state','gui_name','is_used']]
-    bad_data_3 = [['state','gui_name','is_used']]
-    bad_data_4 = [['state','gui_name','is_used']]
-    
-    bad_data_5 = ['stiate','gui_name','is_used']
-    
-    bad_data_1 += [ [0, "BTN 1", True],
-                    [1, "BTN 2", True],
-                    [2, "BTN 4", True]] 
-    
-    bad_data_2 += [ [0, "BTN 1", True],
-                    ['True', "BTN 2", True],
-                    [2, "BTN 4", True]] 
-   
-    bad_data_2 += [ [0, "BTN 1", True],
-                    ["BTN 2", True],
-                    [2, "BTN 4", True]]
-
-
-    bad_data_4 += [ [0, "BTN 1", "True"],
-                    [1 , "BTN 2", True]] 
-
-    bad_data_5 += [[0, "BTN 1", True],
-                   [1 , "BTN 2", True]]
-
-    return [bad_data_1, bad_data_2, bad_data_3, bad_data_4]
-
-@pytest.fixture
-def bad_dataArray_data_2(): 
-
-    bad_data_1 = [['state','gui_name']]
-    bad_data_2 = [['state','gui_name']]
-    bad_data_3 = [['state','gui_name']]
-    bad_data_4 = [['state','gui_name']]
-    
-    bad_data_5 = ['stiate','gui_name']
-    
-    bad_data_1 += [ [0, "BTN 1"],
-                    [1, "BTN 2"],
-                    [2, "BTN 4"]] 
-    
-    bad_data_2 += [ [0, "BTN 1"],
-                    ['True', "BTN 2"],
-                    [2, "BTN 4"]] 
-   
-    bad_data_2 += [ [0, "BTN 1"],
-                    ["BTN 2"],
-                    [2, "BTN 4"]]
-
-    bad_data_4 += [ [0, "BTN 1", True],
-                    [1 , "BTN 2", True]] 
+    return [ (pins_1, data_1, is_used_1),
+             (pins_2, data_2, is_used_2),
+             (pins_3, data_3, is_used_3),
+             (pins_4, data_4, is_used_4)]
 
 
 
-    return [bad_data_1, bad_data_2, bad_data_3, bad_data_4]
-
-def test_setDataArray(good_dataArray_data, bad_dataArray_data, good_dataArray_data_2, bad_dataArray_data_2):
-
-    for good_data in good_dataArray_data:
+def test_setDataArray(good_states):
+    for data in good_states:
         table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
-        assert good_data == table_model.dataArray()
-   
-    for good_data in good_dataArray_data_2:
-        table_model = DigitalStateTableModel(allow_is_used = False)
-        table_model.setDataArray(good_data)
-        assert good_data == table_model.dataArray()
-   
-    for bad_data in bad_dataArray_data:
-        table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(bad_data)
-        assert bad_data != table_model.dataArray()
-    
-    for bad_data in bad_dataArray_data_2:
-        table_model = DigitalStateTableModel(allow_is_used = False)
-        table_model.setDataArray(bad_data)
-        assert bad_data != table_model.dataArray()
-    
-        
-def test_dataArray(good_dataArray_data, good_dataArray_data_2):
+        table_model.setHalPins(data[0])
+        table_model.setStates(data[1])
+        table_model.setIsUsed(data[2])
+
+        assert data[0] == table_model.halPins()
+        assert data[1] == table_model.states()
+        assert data[2] == table_model.isUsed()
+
+
+    table_model.setHalPins(['pin_a'])
+
+    with pytest.raises(ValueError):
+        data = ['btn_1', 'btn_2', 'btn_1_too_many']
+        table_model.setStates(data)
+
+    with pytest.raises(TypeError):
+        data = [True, 'false']
+        table_model.setIsUsed(data)
+
+    with pytest.raises(TypeError):
+        data = [ ("BTN 1", True),
+                 ("BTN 4", True)]
+        table_model.setStates(data)
+
+
+
+
+#TODO Figure out if there's any logic in this
+def test_dataArray(good_states):
     #Check if we get the array back and start editing it that we're editing a copy and not the classes actual _data
-    
-    for good_data in good_dataArray_data:
+    for data in good_states:
         table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
-        
-        returned_array = table_model.dataArray()
+        table_model.setHalPins(data[0])
+        table_model.setStates(data[1])
+
+        returned_array = table_model.states()
         returned_array_copy = copy.deepcopy(returned_array)
-        
-        for i, row in enumerate(returned_array):
-            for j, val in enumerate(row):
-                returned_array[i][j] = None
-        
-        assert returned_array_copy == table_model.dataArray()
-   
-    for good_data in good_dataArray_data_2:
-        table_model = DigitalStateTableModel(allow_is_used = False)
-        table_model.setDataArray(good_data)
-        assert good_data == table_model.dataArray()
-   
-        returned_array = table_model.dataArray()
-        returned_array_copy = copy.deepcopy(returned_array)
-        
-        for i, row in enumerate(returned_array):
-            for j, val in enumerate(row):
-                returned_array[i][j] = None
-        
-        assert returned_array_copy == table_model.dataArray()
 
-        
-def test_rowCount(good_dataArray_data, good_dataArray_data_2):
-    
-    for good_data in good_dataArray_data:
+        returned_array.pop()
+        assert returned_array_copy == table_model.states()
+
+
+def test_rowCount(good_states):
+    for data in good_states:
         table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
-        assert table_model.rowCount() == len(good_data)-1
-        
-    for good_data in good_dataArray_data_2:
+        table_model.setHalPins(data[0])
+        table_model.setStates(data[1])
+
+        assert table_model.rowCount() == len(data[1])
+
+
+def test_columnCount(good_states):
+    for data in good_states:
         table_model = DigitalStateTableModel(allow_is_used = False)
-        table_model.setDataArray(good_data)
-        assert table_model.rowCount() == len(good_data)-1 
-        
-def test_columnCount(good_dataArray_data, good_dataArray_data_2):
-    for good_data in good_dataArray_data:
+        table_model.setHalPins(data[0])
+        table_model.setStates(data[1])
+
+        if   len(data[1]) == 2 : assert table_model.columnCount() == 2
+        elif len(data[1]) == 4 : assert table_model.columnCount() == 3
+        elif len(data[1]) == 8 : assert table_model.columnCount() == 4
+        elif len(data[1]) == 16: assert table_model.columnCount() == 5
+
+
+def test_headerData(good_states):
+    for data in good_states:
         table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
+        table_model.setHalPins(data[0])
+        table_model.setStates(data[1])
+        table_model.setIsUsed(data[2])
 
-        if   len(good_data) == 2+1 : assert table_model.columnCount() == 3
-        elif len(good_data) == 4+1 : assert table_model.columnCount() == 4
-        elif len(good_data) == 8+1 : assert table_model.columnCount() == 5
-        elif len(good_data) == 16+1: assert table_model.columnCount() == 6
-    
-    for good_data in good_dataArray_data_2:
-        table_model = DigitalStateTableModel(allow_is_used = False)
-        table_model.setDataArray(good_data)
-
-        if   len(good_data) == 2+1 : assert table_model.columnCount() == 2
-        elif len(good_data) == 4+1 : assert table_model.columnCount() == 3
-        elif len(good_data) == 8+1 : assert table_model.columnCount() == 4
-        elif len(good_data) == 16+1: assert table_model.columnCount() == 5
-
-def test_headerData(good_dataArray_data, good_dataArray_data_2):
-    for good_data in good_dataArray_data:
-        table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
-
-        num_cols = len(good_data[0]) 
-        num_rows = len(good_data) - 1
-
-        #check horizontal header header
-        if num_rows == 2:
-            assert 'bit_0'    == table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'GUI Name' == table_model.headerData(1, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'Is Used'  == table_model.headerData(2, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-
-        elif num_rows == 4:
-            assert 'bit_1'    == table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_0'    == table_model.headerData(1, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'GUI Name' == table_model.headerData(2, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'Is Used'  == table_model.headerData(3, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-
-        elif num_rows == 8:
-            assert 'bit_2'    == table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_1'    == table_model.headerData(1, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_0'    == table_model.headerData(2, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'GUI Name' == table_model.headerData(3, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'Is Used'  == table_model.headerData(4, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-        
-        elif num_rows == 16:
-            assert 'bit_3'    == table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_2'    == table_model.headerData(1, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_1'    == table_model.headerData(2, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_0'    == table_model.headerData(3, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'GUI Name' == table_model.headerData(4, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'Is Used'  == table_model.headerData(5, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-        
+        assert 'GUI Name' == table_model.headerData(table_model.nameColumn(), QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
+        assert 'Is Used'  == table_model.headerData(table_model.isUsedColumn(), QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
+        assert 'Is Used'  != table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
 
         #check vertical header
+        num_rows = len(data[1])
         for row in range(num_rows):
             assert str(row) == table_model.headerData(row, QtCore.Qt.Vertical, QtCore.Qt.DisplayRole)
 
 
-    #Check with allow_is_used diabled
-    for good_data in good_dataArray_data_2:
-        table_model = DigitalStateTableModel(allow_is_used = False)
-        table_model.setDataArray(good_data)
-
-        num_cols = len(good_data[0]) 
-        num_rows = len(good_data) - 1
-
-        #check horizontal header header
-        if num_rows == 2:
-            assert 'bit_0'    == table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'GUI Name' == table_model.headerData(1, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-
-        elif num_rows == 4:
-            assert 'bit_1'    == table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_0'    == table_model.headerData(1, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'GUI Name' == table_model.headerData(2, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-
-        elif num_rows == 8:
-            assert 'bit_2'    == table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_1'    == table_model.headerData(1, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_0'    == table_model.headerData(2, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'GUI Name' == table_model.headerData(3, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-        
-        elif num_rows == 16:
-            assert 'bit_3'    == table_model.headerData(0, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_2'    == table_model.headerData(1, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_1'    == table_model.headerData(2, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'bit_0'    == table_model.headerData(3, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-            assert 'GUI Name' == table_model.headerData(4, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-        
-
-        #check vertical header
-        for row in range(num_rows):
-            assert str(row) == table_model.headerData(row, QtCore.Qt.Vertical, QtCore.Qt.DisplayRole)
-
-def test_data(good_dataArray_data):
-    for good_data in good_dataArray_data:
+def test_data(good_states):
+    for data in good_states:
         table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
+        table_model.setHalPins(data[0])
+        table_model.setStates(data[1])
+        table_model.setIsUsed(data[2])
 
-        good_data_main = good_data[1:]
-        for i, row in enumerate(good_data_main):
-            assert good_data_main[i][1] == table_model.data(table_model.index(i,table_model.nameColumn(),QtCore.QModelIndex()), QtCore.Qt.DisplayRole)
-            assert good_data_main[i][2] == table_model.data(table_model.index(i,table_model.isUsedColumn(),QtCore.QModelIndex()), QtCore.Qt.DisplayRole)
-           
-def test_setData(good_dataArray_data):
-    for good_data in good_dataArray_data:
+        for i, itm in enumerate(data[1]):
+            assert itm == table_model.data(table_model.index(i,table_model.nameColumn(),QtCore.QModelIndex()), QtCore.Qt.DisplayRole)
+
+        for i, itm in enumerate(data[2]):
+            assert itm == table_model.data(table_model.index(i,table_model.isUsedColumn(),QtCore.QModelIndex()), QtCore.Qt.DisplayRole)
+
+
+
+
+
+def test_setData(good_states):
+    for data in good_states:
         table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
-
-
+        table_model.setHalPins(data[0])
+        table_model.setStates(data[1])
+        table_model.setIsUsed(data[2])
 
         is_used_col = table_model.isUsedColumn()
         name_col    = table_model.nameColumn()
         num_bits    = table_model.numberOfBits()
-
-        num_cols = len(good_data[0])
-        num_rows = len(good_data)-1 #not including the header row
-
+        num_rows    = len(data[1])
 
         #Try setting some of the isUsed column
         table_model.setData(table_model.index(0, is_used_col, QtCore.QModelIndex()), False, QtCore.Qt.EditRole)
@@ -369,7 +164,6 @@ def test_setData(good_dataArray_data):
         val = table_model.data(table_model.index(num_rows-1, is_used_col, QtCore.QModelIndex()),  QtCore.Qt.DisplayRole)
         assert val == False
 
-
         table_model.setData(table_model.index(0, is_used_col, QtCore.QModelIndex()), True, QtCore.Qt.EditRole)
         val = table_model.data(table_model.index(0, is_used_col, QtCore.QModelIndex()),  QtCore.Qt.DisplayRole)
         assert val == True
@@ -377,7 +171,6 @@ def test_setData(good_dataArray_data):
         table_model.setData(table_model.index(num_rows-1, is_used_col, QtCore.QModelIndex()), True, QtCore.Qt.EditRole)
         val = table_model.data(table_model.index(num_rows-1, is_used_col, QtCore.QModelIndex()),  QtCore.Qt.DisplayRole)
         assert val == True
-
 
 
         #Try setting some of the name column
@@ -389,22 +182,22 @@ def test_setData(good_dataArray_data):
         val = table_model.data(table_model.index(num_rows-1, name_col, QtCore.QModelIndex()),  QtCore.Qt.DisplayRole)
         assert val == "Start"
 
-
         #Try setting 0,0 to True, this should always be false
         table_model.setData(table_model.index(0, 0, QtCore.QModelIndex()), True, QtCore.Qt.EditRole)
         val = table_model.data(table_model.index(0, 0, QtCore.QModelIndex()),  QtCore.Qt.DisplayRole)
         assert val == False
-
 
         #Try setting 0,0 to True, this should always be false
         table_model.setData(table_model.index(0, num_bits-1, QtCore.QModelIndex()), False, QtCore.Qt.EditRole)
         val = table_model.data(table_model.index(0, num_bits-1, QtCore.QModelIndex()),  QtCore.Qt.DisplayRole)
         assert val == False
 
-def test_flags(good_dataArray_data):
-    for good_data in good_dataArray_data:
+
+def test_flags(good_states):
+    for data in good_states:
         table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
+        table_model.setHalPins(data[0])
+        table_model.setStates(data[1])
 
         is_used_col = table_model.isUsedColumn()
         name_col    = table_model.nameColumn()
@@ -414,68 +207,37 @@ def test_flags(good_dataArray_data):
 
         flags = table_model.flags(table_model.index(0, is_used_col, QtCore.QModelIndex()))
         assert flags == QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
-                
+
         flags = table_model.flags(table_model.index(1, name_col, QtCore.QModelIndex()))
         assert flags == QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
-        
+
         flags = table_model.flags(table_model.index(1, is_used_col, QtCore.QModelIndex()))
         assert flags == QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
 
+
 def test_setNumberOfBits():
-    table_model = DigitalStateTableModel(allow_is_used = False)
-    good_data_1 = [ ['state','gui_name'],
-                    [False, "BTN 1"],
-                    [True , "BTN 2"]]
-        
-    table_model.setDataArray(good_data_1)
+    table_model = DigitalStateTableModel(allow_is_used = True)
+
+    data_1 = ['BTN 1','BTN 2']
+
+    table_model.setHalPins(['my_pin'])
+    table_model.setStates(data_1)
+
     table_model.setNumberOfBits(1)
 
-    assert good_data_1 == table_model.dataArray()
-  
+    assert data_1 == table_model.states()
+
     #set it to different number of bits
     for i in [2,3,4,1,1]:
         table_model.setNumberOfBits(i)
-        arr = table_model.dataArray()
-        assert len(arr)-1 == 2<<(i-1)
-        assert arr[1][1] == "BTN 1"
-        assert arr[2][1] == "BTN 2"
+        arr = table_model.states()
+        assert len(arr) == 2<<(i-1)
+        assert arr[0] == "BTN 1"
+        assert arr[1] == "BTN 2"
 
-    
-    last_good_arr = table_model.dataArray()
+    last_good_arr = table_model.states()
 
     #Set to some not allowed numbers
     for i in [0,-1,5,10]:
-        assert False == table_model.setNumberOfBits(i)
-        assert last_good_arr == table_model.dataArray()
-
-def test_states(good_dataArray_data, good_dataArray_data_2):
-    for good_data in good_dataArray_data:
-        table_model = DigitalStateTableModel(allow_is_used = True)
-        table_model.setDataArray(good_data)
-
-        states   = table_model.states()
-        states_2 = copy.deepcopy(table_model.states())
-
-        assert len(states) == len(good_data)-1
-        for state in states:
-            assert isinstance(state, str)
-
-        #Check that we have a copy of them
-        for state in states:
-            state = state + '-false'
-        assert states_2 == table_model.states()
-
-
-    for good_data in good_dataArray_data_2:
-        table_model = DigitalStateTableModel(allow_is_used = False)
-        table_model.setDataArray(good_data)
-
-        states = table_model.states()
-
-        assert len(states) == len(good_data)-1
-        for state in states:
-            assert isinstance(state, str)
-
-
-
-
+        with pytest.raises(ValueError):
+            table_model.setNumberOfBits(i)

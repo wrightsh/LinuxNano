@@ -1,7 +1,5 @@
 from PyQt5 import QtCore, QtGui
 
-
-
 from linuxnano.strings import strings
 from linuxnano.data import Node, ToolNode, SystemNode, DeviceNode, DeviceIconNode, DigitalInputNode, DigitalOutputNode, AnalogInputNode, AnalogOutputNode
 from linuxnano.message_box import MessageBox
@@ -20,49 +18,43 @@ class ToolModel(QtCore.QAbstractItemModel):
     #TODO: Do we clear the current tree if there's one?
     def loadTool(self, tool_tree):
         try:
-            root = tool_tree.getroot()
             root_index = self.createIndex(0,0,self._root_node)
 
-            for tool_item in root.findall(strings.TOOL_NODE):
-                tool_index = self.insertChild(root_index, strings.TOOL_NODE)
-                tool_index.internalPointer().loadAttribFromXML(tool_item)
+            tool_item = tool_tree.getroot()
+            tool_index = self.insertChild(root_index, strings.TOOL_NODE)
+            tool_index.internalPointer().loadAttribFromXML(tool_item)
 
+            for system_item in tool_item.findall(strings.SYSTEM_NODE):
+                system_index = self.insertChild(tool_index, strings.SYSTEM_NODE)
 
-                for system_item in tool_item.findall(strings.SYSTEM_NODE):
-                    system_index = self.insertChild(tool_index, strings.SYSTEM_NODE)
+                for device_item in system_item.findall(strings.DEVICE_NODE):
+                    device_index = self.insertChild(system_index, strings.DEVICE_NODE)
 
-                    for device_item in system_item.findall(strings.DEVICE_NODE):
-                        device_index = self.insertChild(system_index, strings.DEVICE_NODE)
+                    device_icon_xml = device_item.find(strings.DEVICE_ICON_NODE)
+                    device_icon_index = self.insertChild(device_index, strings.DEVICE_ICON_NODE)
 
+                    for xml_item in device_item.findall(strings.D_IN_NODE):
+                        d_in_index = self.insertChild(device_index, strings.D_IN_NODE)
+                        d_in_index.internalPointer().loadAttribFromXML(xml_item)
 
-                        device_icon_xml = device_item.find(strings.DEVICE_ICON_NODE)
-                        device_icon_index = self.insertChild(device_index, strings.DEVICE_ICON_NODE)
+                    for xml_item in device_item.findall(strings.D_OUT_NODE):
+                        d_out_index = self.insertChild(device_index, strings.D_OUT_NODE)
+                        d_out_index.internalPointer().loadAttribFromXML(xml_item)
 
+                    for xml_item in device_item.findall(strings.A_IN_NODE):
+                        a_in_index = self.insertChild(device_index, strings.A_IN_NODE)
+                        a_in_index.internalPointer().loadAttribFromXML(xml_item)
 
-                        #TODO add code to force a manual icon if it's not there
+                    for xml_item in device_item.findall(strings.A_OUT_NODE):
+                        a_out_index = self.insertChild(device_index, strings.A_OUT_NODE)
+                        a_out_index.internalPointer().loadAttribFromXML(xml_item)
 
-                        for xml_item in device_item.findall(strings.D_IN_NODE):
-                            d_in_index = self.insertChild(device_index, strings.D_IN_NODE)
-                            d_in_index.internalPointer().loadAttribFromXML(xml_item)
+                    #Must load after analog nodes since we have an analog node name
+                    if device_icon_xml is not None:
+                       device_icon_index.internalPointer().loadAttribFromXML(device_icon_xml)
 
-                        for xml_item in device_item.findall(strings.D_OUT_NODE):
-                            d_out_index = self.insertChild(device_index, strings.D_OUT_NODE)
-                            d_out_index.internalPointer().loadAttribFromXML(xml_item)
-
-                        for xml_item in device_item.findall(strings.A_IN_NODE):
-                            a_in_index = self.insertChild(device_index, strings.A_IN_NODE)
-                            a_in_index.internalPointer().loadAttribFromXML(xml_item)
-
-                        for xml_item in device_item.findall(strings.A_OUT_NODE):
-                            a_out_index = self.insertChild(device_index, strings.A_OUT_NODE)
-                            a_out_index.internalPointer().loadAttribFromXML(xml_item)
-
-                        #Must load after analog nodes since we have an analog node name
-                        if device_icon_xml is not None:
-                           device_icon_index.internalPointer().loadAttribFromXML(device_icon_xml)
-
-                        device_index.internalPointer().loadAttribFromXML(device_item)
-                    system_index.internalPointer().loadAttribFromXML(system_item)
+                    device_index.internalPointer().loadAttribFromXML(device_item)
+                system_index.internalPointer().loadAttribFromXML(system_item)
 
             return True
 
@@ -171,9 +163,6 @@ class ToolModel(QtCore.QAbstractItemModel):
             return new_child_index
 
 
-
-
-
     def removeRows(self, row, count, parent_index):
         parent_node = parent_index.internalPointer()
 
@@ -226,11 +215,11 @@ class ToolModel(QtCore.QAbstractItemModel):
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """INPUTS: QModelIndex, QVariant, int (flag)"""
-        print('setData')
         if type(value) == type(QtCore.QVariant()):
             value = value.toPyObject()
 
-        if index.isValid() and role == QtCore.Qt.EditRole:
+        if index.isValid() and role == QtCore.Qt.EditRole and value is not None: #FIXME this might break something
+        #if index.isValid() and role == QtCore.Qt.EditRole:
             node = index.internalPointer()
             node.setData(index.column(), value)
             self.dataChanged.emit(index, index)
@@ -280,6 +269,23 @@ class ToolModel(QtCore.QAbstractItemModel):
             return self.createIndex(row, column, child_item)
         else:
             return QtCore.QModelIndex()
+
+
+
+    def indexesOfType(self, index_type, parent_index):
+        parent_node = parent_index.internalPointer() if parent_index.isValid() else self._root_node
+        indexes = []
+
+        for row in range(self.rowCount(parent_index)):
+            index = parent_index.child(row, 0)
+
+            if index.internalPointer().typeInfo() == index_type:
+                indexes.append(index)
+
+            indexes += self.indexesOfType(index_type, index)
+
+        return indexes
+
 
 
     def systemIcons(self, index):

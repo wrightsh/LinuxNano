@@ -16,25 +16,25 @@ def halSetup():
 
     subprocess.call(['halcmd', 'loadrt', 'threads', 'name1=servo', 'period1=1000000', 'name2=gui', 'period2=100000000'])
     subprocess.call(['halcmd', 'show', 'thread'])
-    
-    
+
+
     subprocess.call(['halcmd', 'addf', 'lcec.read-all', 'servo'])
     subprocess.call(['halcmd', 'addf', 'lcec.write-all', 'servo'])
-    
+
 
 
     ##### Sampler #####
-    subprocess.call(['halcmd', 'loadrt', 'sampler', 'depth=100', 'cfg=b']) 
+    subprocess.call(['halcmd', 'loadrt', 'sampler', 'depth=100', 'cfg=b'])
     subprocess.call(['halcmd', 'net', 'test_net', 'lcec.0.1.din-1', '=>','sampler.0.pin.0'])
 
     subprocess.call(['halcmd', 'setp', 'sampler.0.enable', 'True'])
     subprocess.call(['halcmd', 'addf', 'sampler.0', 'gui'])
 
 
-    #subprocess.call(['halcmd', 'loadusr', 'halsampler', '-c', '0', 'test_samples.txt']) 
+    #subprocess.call(['halcmd', 'loadusr', 'halsampler', '-c', '0', 'test_samples.txt'])
 
     #try:
-    #    output = subprocess.check_output(['halcmd', 'loadusr', 'halsampler', '-c', '0']) 
+    #    output = subprocess.check_output(['halcmd', 'loadusr', 'halsampler', '-c', '0'])
     #except subprocess.CalledProcessError as e:
     #    output = e.output
     #print(output)
@@ -43,7 +43,7 @@ def halSetup():
     subprocess.call(['halcmd', 'loadusr', 'halmeter'])
 
     #output = subprocess.Popen(['halcmd', 'loadusr', 'halsampler', '-c', '0', '-n', '1', '-t'], stdout=subprocess.PIPE,
-    #                                                                                           stderr=subprocess.STDOUT) 
+    #                                                                                           stderr=subprocess.STDOUT)
 
 
     #for line in iter(output.stdout.readline, b''):
@@ -69,44 +69,44 @@ def halSetup():
 class Form(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        
+
         layout = QtWidgets.QVBoxLayout()
         self.b1 = QtWidgets.QPushButton("1-ON")
         self.b2 = QtWidgets.QPushButton("1-OFF")
         self.b3 = QtWidgets.QPushButton("2-ON")
         self.b4 = QtWidgets.QPushButton("2-OFF")
-        
+
         self.in_1 = QtWidgets.QLabel('unknown')
-        
+
         layout.addWidget(self.b1)
         layout.addWidget(self.b2)
         layout.addWidget(self.b3)
         layout.addWidget(self.b4)
         layout.addWidget(self.in_1)
-        
+
         self.b1.clicked.connect(self.DOUT_1_ON)
         self.b2.clicked.connect(self.DOUT_1_OFF)
         self.b3.clicked.connect(self.DOUT_2_ON)
         self.b4.clicked.connect(self.DOUT_2_OFF)
-        
+
         #self.b2.clicked.connect(lambda:self.whichbtn(self.b2))
         self.setWindowTitle("Testing halcmd interface")
 
         self.setLayout(layout)
-    
+
         #self.timer = QtCore.QTimer()
         #self.timer.timeout.connect(self.update_in_1)
         #self.timer.start(500)
-       
 
 
- #       self.p = subprocess.Popen(['halcmd', 'loadusr', 'halsampler', '-c', '0','-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True) 
+
+ #       self.p = subprocess.Popen(['halcmd', 'loadusr', 'halsampler', '-c', '0','-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
         #self.timer2 = QtCore.QTimer()
         #self.timer2.timeout.connect(self.buffer_test)
         #self.timer2.start(2000)
-    
-    
+
+
         self.thread = SamplerThread()
         #self.thread.finished.connect(app.exit)
         self.thread.signal.connect(self.update)
@@ -119,13 +119,13 @@ class Form(QtWidgets.QDialog):
 
     def DOUT_1_ON(self):
         subprocess.call(['halcmd', 'setp', 'lcec.0.3.dout-0','True'])
-        
+
     def DOUT_1_OFF(self):
         subprocess.call(['halcmd', 'setp', 'lcec.0.3.dout-0','False'])
 
     def DOUT_2_ON(self):
         subprocess.call(['halcmd', 'setp', 'lcec.0.3.dout-1','True'])
-        
+
     def DOUT_2_OFF(self):
         subprocess.call(['halcmd', 'setp', 'lcec.0.3.dout-1','False'])
 
@@ -151,11 +151,11 @@ class SamplerThread(QtCore.QThread):
 
     def __init__(self):
         QtCore.QThread.__init__(self)
-        
+
 
 
     def run(self):
-        #self.p = subprocess.Popen(['halcmd', 'loadusr', 'halsampler', '-c', '0','-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True) 
+        #self.p = subprocess.Popen(['halcmd', 'loadusr', 'halsampler', '-c', '0','-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
 
         while True:
@@ -164,11 +164,11 @@ class SamplerThread(QtCore.QThread):
 
             self.signal.emit(output)
             time.sleep(.5)
-    
 
 
 
-        
+
+
 
 
 def main():
@@ -178,7 +178,7 @@ def main():
 
     form = Form()
     form.show()
-    
+
     ret = app.exec_()
 
     subprocess.call(['halcmd', 'stop'])

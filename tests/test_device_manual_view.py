@@ -9,9 +9,22 @@ from linuxnano.views.widgets.device_manual_view import DeviceManualView, Digital
 import xml.etree.ElementTree as ET
 from linuxnano.tool_model import ToolModel
 from linuxnano.strings import strings
+from linuxnano.message_box import MessageBox
 
 
-#@pytest.fixture(params=['tests/tools/tool_model_1.xml','tests/tools/tool_model_2.xml'])
+@pytest.fixture
+def open_window(qtbot):
+    def callback(window):
+        widget = window()
+        qtbot.addWidget(widget)
+        widget.show()
+        qtbot.wait_for_window_shown(widget)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        return widget
+
+    return callback
+
+
 @pytest.fixture(params=['tests/tools/tool_model_1.xml'])
 def tool_model(request):
     tree = ET.parse(request.param)
@@ -19,86 +32,53 @@ def tool_model(request):
     tool_model.loadTool(tree)
     return tool_model
 
+
+#11 for icon layer?
 @pytest.fixture()
-def system_indexes(tool_model):
+def indexes(tool_model):
+    indexes = {strings.SYSTEM_NODE      : [],
+               strings.DEVICE_NODE      : [],
+               strings.DEVICE_ICON_NODE : [],
+               strings.D_IN_NODE        : [],
+               strings.A_IN_NODE        : [],
+               strings.D_OUT_NODE       : [],
+               strings.A_OUT_NODE       : []}
+
+
     tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
-    system_indexes = []
+
+    #Systems
     for row in range(tool_model.rowCount(tool_index)):
-        system_indexes.append(tool_index.child(row, 0))
-    return system_indexes
+        indexes[strings.SYSTEM_NODE].append(tool_index.child(row, 0))
 
-@pytest.fixture()
-def device_indexes(tool_model, system_indexes):
-    tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
-    device_indexes = []
-    for sys_index in system_indexes:
+    #Devices
+    for sys_index in indexes[strings.SYSTEM_NODE]:
         for row in range(tool_model.rowCount(sys_index)):
-            device_indexes.append(sys_index.child(row, 0)) #11 for icon_layer
-    return device_indexes
+            indexes[strings.DEVICE_NODE].append(sys_index.child(row, 0))#This column matters!
 
-@pytest.fixture()
-def d_in_indexes(tool_model, device_indexes):
-    tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
-    d_in_indexes = []
-    for device_index in device_indexes:
-        for row in range(tool_model.rowCount(device_index)):
-            if device_index.child(row,0).internalPointer().typeInfo() == strings.D_IN_NODE:
-                d_in_indexes.append(device_index.child(row, 0)) #11 for icon_layer
-    return d_in_indexes
+    #children of a device
+    for index in indexes[strings.DEVICE_NODE]:
+        for row in range(tool_model.rowCount(index)):
 
-@pytest.fixture()
-def d_out_indexes(tool_model, device_indexes):
-    tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
-    d_out_indexes = []
-    for device_index in device_indexes:
-        for row in range(tool_model.rowCount(device_index)):
-            if device_index.child(row,0).internalPointer().typeInfo() == strings.D_OUT_NODE:
-                d_out_indexes.append(device_index.child(row, 0)) #11 for icon_layer
-    return d_out_indexes
+            if index.child(row,0).internalPointer().typeInfo() == strings.D_IN_NODE:
+                indexes[strings.D_IN_NODE].append(index.child(row, 0))
 
-@pytest.fixture()
-def a_in_indexes(tool_model, device_indexes):
-    tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
-    a_in_indexes = []
-    for device_index in device_indexes:
-        for row in range(tool_model.rowCount(device_index)):
-            if device_index.child(row,0).internalPointer().typeInfo() == strings.A_IN_NODE:
-                a_in_indexes.append(device_index.child(row, 0)) #11 for icon_layer
-    return a_in_indexes
+            if index.child(row, 0).internalPointer().typeInfo() == strings.D_OUT_NODE:
+                indexes[strings.D_OUT_NODE].append(index.child(row, 20))
 
-@pytest.fixture()
-def a_out_indexes(tool_model, device_indexes):
-    tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
-    a_out_indexes = []
-    for device_index in device_indexes:
-        for row in range(tool_model.rowCount(device_index)):
-            if device_index.child(row,0).internalPointer().typeInfo() == strings.A_OUT_NODE:
-                a_out_indexes.append(device_index.child(row, 0)) #11 for icon_layer
-    return a_out_indexes
+            if index.child(row,0).internalPointer().typeInfo() == strings.A_IN_NODE:
+                indexes[strings.A_IN_NODE].append(index.child(row, 0))
 
-@pytest.fixture()
-def wid(tool_model):
-    view = DeviceManualView()
-    view.setModel(tool_model)
-    view.resize(400,400)
-    view.setWindowTitle(str(type(view)))
-    view.show()
-    return view
+            if index.child(row,0).internalPointer().typeInfo() == strings.A_OUT_NODE:
+                indexes[strings.A_OUT_NODE].append(index.child(row, 0))
 
-@pytest.fixture()
-def wid2(tool_model):
-    view = DeviceManualView()
-    view.setModel(tool_model)
-    view.setGeometry(0,0,400,400)
-    view.setWindowTitle(str(type(view)))
-    view.show()
-    return view
+    return indexes
 
 
 
 
-def test_DigitalInputManualView_init(qtbot, tool_model, d_in_indexes):
-    for index in d_in_indexes:
+def itest_DigitalInputManualView_init(qtbot, tool_model, indexes):
+    for index in indexes[strings.D_IN_NODE]:
         wid = DigitalInputManualView()
         wid.setModel(tool_model)
         wid.setRootIndex(index.parent())
@@ -107,9 +87,14 @@ def test_DigitalInputManualView_init(qtbot, tool_model, d_in_indexes):
         qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
         assert wid.isVisible()
 
-def test_DigitalOutputManualView_init(qtbot, tool_model, d_out_indexes):
-    for index in d_out_indexes:
-        wid = DigitalOutputManualView(index.internalPointer().states())
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Digital Input Manual View")
+        qtbot.stopForInteraction()
+
+
+def test_DigitalOutputManualView_init(qtbot, tool_model, indexes):
+    for index in indexes[strings.D_OUT_NODE]:
+        wid = DigitalOutputManualView(index.internalPointer().halPins, index.internalPointer().states, index.internalPointer().isUsed)
         wid.setModel(tool_model)
         wid.setRootIndex(index.parent())
         wid.setCurrentModelIndex(index)
@@ -117,8 +102,12 @@ def test_DigitalOutputManualView_init(qtbot, tool_model, d_out_indexes):
         qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
         assert wid.isVisible()
 
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Digital Output Manual View")
+        qtbot.stopForInteraction()
 
-def test_AnalogInputManualView_init(qtbot, tool_model, a_in_indexes):
+
+def itest_AnalogInputManualView_init(qtbot, tool_model, a_in_indexes):
     for index in a_in_indexes:
         wid = AnalogInputManualView()
         wid.setModel(tool_model)
@@ -129,7 +118,7 @@ def test_AnalogInputManualView_init(qtbot, tool_model, a_in_indexes):
         assert wid.isVisible()
 
 
-def test_AnalogOutputManualView_init(qtbot, tool_model, a_out_indexes):
+def itest_AnalogOutputManualView_init(qtbot, tool_model, a_out_indexes):
     for index in a_out_indexes:
         wid = AnalogOutputManualView()
         wid.setModel(tool_model)
@@ -142,22 +131,28 @@ def test_AnalogOutputManualView_init(qtbot, tool_model, a_out_indexes):
     qtbot.stopForInteraction()
 
 
-def itest_init(qtbot):
+def test_init(qtbot):
     view = DeviceManualView()
     assert isinstance(view, DeviceManualView)
 
-def itest_setModel(qtbot, tool_model):
+def test_setModel(qtbot, tool_model):
     view = DeviceManualView()
     view.setModel(tool_model)
     assert tool_model == view.model()
 
-def test_tmp(qtbot, wid,wid2, tool_model, device_indexes):
-    wid.setSelection(device_indexes[0])
-    wid2.setSelection(device_indexes[0])
+def test_twoOpen(qtbot, open_window, tool_model, indexes):
+    wid1 = open_window(DeviceManualView)
+    wid2 = open_window(DeviceManualView)
 
-    with qtbot.waitExposed(wid, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):pass
-    with qtbot.waitExposed(wid2, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):pass
-    assert wid.isVisible()
+    wid1.setModel(tool_model)
+    wid2.setModel(tool_model)
+
+    index = indexes[strings.DEVICE_NODE][0]
+
+    wid1.setSelection(index)
+    wid2.setSelection(index)
+
+    assert wid1.isVisible()
     assert wid2.isVisible()
 
     if TestingFlags.ENABLE_MANUAL_TESTING is True:
@@ -165,11 +160,40 @@ def test_tmp(qtbot, wid,wid2, tool_model, device_indexes):
         message.setText("Test view with two open.")
         message.exec_()
 
+
+        d_out = indexes[strings.D_OUT_NODE][0]
+
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        tool_model.setData(d_out, 0)
+        print("grr")
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        tool_model.setData(d_out, 1)
+        print("grr")
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        tool_model.setData(d_out, 0)
+        print("grr")
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        tool_model.setData(d_out, 1)
+        print("grr")
+        #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        #tool_model.setData(d_out, 3)
+        #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        #tool_model.setData(d_out, 4)
+        #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        #tool_model.setData(d_out, 5)
+        #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        #tool_model.setData(d_out, 6)
+        #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        #tool_model.setData(d_out, 63)
+        #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        #tool_model.setData(d_out, 64)
+        #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        #tool_model.setData(d_out, 255)
+
         qtbot.stopForInteraction()
 
 
-def test_selectDevice(qtbot, wid, tool_model, device_indexes):
-
+def itest_selectDevice(qtbot, wid, tool_model, device_indexes):
     wid.setSelection(device_indexes[0])
     with qtbot.waitExposed(wid, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):pass
     assert wid.isVisible()
@@ -187,7 +211,7 @@ def test_selectDevice(qtbot, wid, tool_model, device_indexes):
         qtbot.stopForInteraction()
 
 
-def test_selectDevice_object_count(qapp, qtbot, wid, tool_model, device_indexes):
+def itest_selectDevice_object_count(qapp, qtbot, wid, tool_model, device_indexes):
     wid.setSelection(device_indexes[0])
     with qtbot.waitExposed(wid, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):pass
     assert wid.isVisible()

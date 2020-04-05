@@ -1,15 +1,12 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from linuxnano.strings import strings
-#from linuxnano.table_models import DeviceStateTableModel
-#from linuxnano.table_models import StateTableModel
-#from linuxnano.table_models import ScaleTableModel
-#import copy
+import subprocess
 
 manual_device_view_base, manual_device_view_form = uic.loadUiType("linuxnano/views/DeviceManualView.ui")
 
 
 class DeviceManualView(manual_device_view_base, manual_device_view_form):
-    def __init__(self):#, model, parent=None):
+    def __init__(self, parent=None):
         super(manual_device_view_base, self).__init__()
         self.setupUi(self)
 
@@ -46,7 +43,8 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
                 wid = DigitalInputManualView()
 
             elif child_index.internalPointer().typeInfo() == strings.D_OUT_NODE:
-                wid = DigitalOutputManualView(child_index.internalPointer().states())
+                #wid = DigitalOutputManualView(child_index.internalPointer().states)
+                wid = DigitalOutputManualView(child_index.internalPointer().signals(), child_index.internalPointer().states, child_index.internalPointer().isUsed)
 
             elif child_index.internalPointer().typeInfo() == strings.A_IN_NODE:
                 wid = AnalogInputManualView()
@@ -72,6 +70,8 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
         self._mapper.addMapping(self.ui_description,       2, bytes("text",'ascii'))
         self._mapper.addMapping(self.ui_status,           10, bytes("text",'ascii'))
 
+    def model(self):
+        return self._model
 
 
 class DigitalInputManualView(QtWidgets.QWidget):
@@ -110,7 +110,7 @@ Type 1: buttons linked to the actions
 Type 2: dropdown to select it or maybe radio buttons? or buttons but they stay clicked like a radio button?
 '''
 class DigitalOutputManualView(QtWidgets.QWidget):
-    def __init__(self, states):
+    def __init__(self, hal_pins, states, is_used):
         super().__init__()
         self.mapper = QtWidgets.QDataWidgetMapper()
         hbox = QtWidgets.QHBoxLayout()
@@ -123,12 +123,18 @@ class DigitalOutputManualView(QtWidgets.QWidget):
         self.btn_group = QtWidgets.QButtonGroup()
         self.btn_group.setExclusive(True)
 
+        self._hal_pins = hal_pins
+        self._is_used = is_used
+        self._interlock = 255
+
         self.btn_group.buttonClicked.connect(self.onClicked)
+
         for i, state in enumerate(states):
-            btn = QtWidgets.QPushButton(state)
-            btn.setCheckable(True)
-            hbox.addWidget(btn)
-            self.btn_group.addButton(btn,i)
+            if self._is_used[i] == True:
+                btn = QtWidgets.QPushButton(state)
+                btn.setCheckable(True)
+                hbox.addWidget(btn)
+                self.btn_group.addButton(btn,i)
 
         hbox.addStretch(1)
 
@@ -139,23 +145,56 @@ class DigitalOutputManualView(QtWidgets.QWidget):
         self.mapper.setCurrentModelIndex(index)
 
     def onClicked(self, btn):
-        QtWidgets.QApplication.postEvent(self,QtGui.QKeyEvent(QtCore.QEvent.KeyPress, QtCore.Qt.Key_Enter, QtCore.Qt.NoModifier))
+        state = self.btn_group.checkedId()
 
-    def setValue(self, value):
+
+        #TODO change from pin name to the generated signal name
+        for i, signal in enumerate(self._hal_pins):
+            if (state>>i)&1 != 0:
+                print("halcmd sets " + signal + ' True')
+                subprocess.call(['halcmd', 'sets', signal, 'True'])
+                #subprocess.call(['halcmd', 'sets', signal, 'True'])
+            else:
+                print("halcmd sets " + signal + ' False')
+                #subprocess.call(['halcmd', 'setp', pin, 'False'])
+                subprocess.call(['halcmd', 'sets', signal, 'False'])
+        #QtWidgets.QApplication.postEvent(self,QtGui.QKeyEvent(QtCore.QEvent.KeyPress, QtCore.Qt.Key_Enter, QtCore.Qt.NoModifier))
+
+    @QtCore.pyqtProperty(int)
+    def value(self):
+        return self.btn_group.checkedId()
+
+    @value.setter
+    def value(self, value):
         for btn in self.btn_group.buttons():
             btn.setDown(False)
-        self.btn_group.button(value).setDown(True)
+        if value is not None:
+            self.btn_group.button(value).setDown(True)
 
-    def getValue(self):
-        return self.btn_group.checkedId()
+
+    @QtCore.pyqtProperty(int)
+    def interlock(self):
+        pass
+        #return self._interlock
+
+    @interlock.setter
+    def interlock(self, value):
+        try:
+            for btn in self.btn_group.buttons():
+                if (value>>self.btn_group.id(btn))&1 != 0:
+                #if value & self.btn_group.id(btn):
+                    btn.setEnabled(True)
+                else:
+                    btn.setEnabled(False)
+        except:
+            print("exception!")
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):model = model.sourceModel()
         self.mapper.setModel(model)
         self.mapper.addMapping(self.name_label, 0, bytes("text",'ascii'))
-        self.mapper.addMapping(self, 22, bytes('value','ascii'))
-
-    value = QtCore.pyqtProperty(int,getValue, setValue)
+        self.mapper.addMapping(self, 22, bytes('interlock','ascii'))
+        self.mapper.addMapping(self, 20, bytes('value','ascii')) #FIXME no idea why this breaks if I change the order of the addMapping
 
 
 

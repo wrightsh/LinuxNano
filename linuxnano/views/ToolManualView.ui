@@ -43,7 +43,6 @@
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <widget class="DeviceManualView" name="ui_button_group" native="true"/>
           <widget class="QWidget" name="widget" native="true">
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
@@ -67,6 +66,11 @@
             </item>
            </layout>
           </widget>
+           <layout class="QVBoxLayout" name="verticalLayout">
+            <item>
+              <widget class="DeviceManualView" name="ui_button_group" native="true"/>
+            </item>
+           </layout>
          </widget>
         </item>
        </layout>

@@ -9,11 +9,9 @@ from linuxnano.message_box import MessageBox
 
 
 
-
-
 class DeviceStateTableModel(QtCore.QAbstractTableModel):
     '''This is owned by the device node.  When setup first calls setNodeStates, passing a 2d array where each row
-       has the name of the HalNode followed by it's possible states.  This is used to form a truth table of all 
+       has the name of the HalNode followed by it's possible states.  This is used to form a truth table of all
        possible states.
 
        setNodeStates is called anytime one of the devices HalNode is added/removed/changed
@@ -21,9 +19,9 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
     '''
     def __init__(self, parent = None):
         super().__init__(parent)
-        
-        self._default_headers = ['Status', 
-                                 'Icon Layer\nName', 
+
+        self._default_headers = ['Status',
+                                 'Icon Layer\nName',
                                  'Is Warning',   #True / False
                                  'Warning\nTimeout (sec)',   # 5sec, use 0 for no warning
                                  'Warning Message',   # "Warning: Foreline valve taking longer then 5 seconds to open"
@@ -57,7 +55,6 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
     def actionTimeoutColumn(self):  return len(self._truth_table[0]) + 9
     def actionColumn(self):         return len(self._truth_table[0]) + 10
     def logEntranceColumn(self):    return len(self._truth_table[0]) + 11
-        
 
     def rowCount(self, parent=None):
         return len(self._data)
@@ -68,56 +65,53 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
 
     #TODO I think this being called too often during load
     def setNodeStates(self, list_of_states):
+        err = "List of states must be in form [ ('io_name_1', ['state_1', 'state_2']), ('io_name_2', ['state_1','state_2']) ]"
+
         states = list_of_states[::-1] #reverses the order
-      
         headers = [row[0] for row in states]
-        states  = [row[1:] for row in states]
+        states  = [row[1] for row in states]
 
-        #First string in each node is the name of the HalNode, rest are the state names
+        if not all(isinstance(item, str) for item in headers):
+            raise TypeError(err)
+
         for row in states:
-               
-            if len(row) <= 1:
-                return False
+            if not isinstance(row, list):
+                raise TypeError(err)
 
-            for val in row:
-                if not (isinstance(val, str) or val == None):
-                    MessageBox('Bad states info sent to DeviceStateTableModel', val)
-                    return False
+            if not all(isinstance(item, str) for item in row):
+                raise TypeError(err)
 
         tbl = []
-        for element in itertools.product(*states):
-            tbl.append(list(element))
-        
+        for e in itertools.product(*states):
+            tbl.append(list(e))
 
         self._truth_table = tbl
 
         #Anytime the truth table is changed we need to update the data layout and the headers
         self.beginResetModel()
-        
+
         new_data = self._truth_table[:]
         for i, row in enumerate(new_data):
             new_data[i] = new_data[i] + self._default_data_row[:]
+
         self._data = new_data
-        
         self._headers = headers + self._default_headers
 
         self.endResetModel()
-        
-        return True
 
+        return True
 
     def truthTable(self):
         return self._truth_table
 
 
-    def setDataArray(self, data):
+    def setDeviceStates(self, data):
         '''
-            in format [ ['state', 'status'      , 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message', 
+            in format [ ['state', 'status'      , 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message',
                         [   0   , 'my status 1' , 'layer_0'   ,        False,               0.0,                '',      False,             0.0,              '',
                         [   1   , 'my status 2' , 'layer_1'   ,         True,               5.0,      'my warning',       True,            10.0,    'some alarm',
                         [   2   , 'my status 3' , 'layer_2'   ,        False,               0.0,                '',      False,             0.0,              '',
                         [   3   , 'my status 4' , 'layer_3'   ,        False,               0.0,                '',      False,             0.0,              '',
-                       
 
 
                                     'triggers_action', 'action_timeout', 'action', 'log_entrance'],
@@ -129,104 +123,39 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
 
 
         '''
-            
-        #Data validation first
-        try:
-            if data[0] == self._data_array_headers: 
-                data_main = data[1:]
-            else:
-                MessageBox('Invalid headers for set Data', data[0])
-                return False
-
-            num_rows = len(data_main)
-
-            if num_rows != len(self._truth_table):
-                MessageBox('Invalid number of states for device', 'sent: ', num_rows, 'need: ', len(self._truth_table) )
-                return False
-        
-            #Check state column is in order, 0,1,2,.. n
-            first_col = [row[0] for row in data_main]
-            if first_col != list(range(0, len(self._truth_table))):
-                MessageBox('State column must be in format 0, 1 ,2 ....n', first_col )
-                return False
-            
-            #Check status column is text
-            for item in [row[1] for row in data_main]:
-                if not isinstance(item, str):
-                    MessageBox('status must be of type str', item, 'is of type: ', type(item))
-                    return False
-            
-            #Check icon_layer column is text
-            for item in [row[2] for row in data_main]:
-                if not isinstance(item, str):
-                    MessageBox('icon_layer must be of type str', item, 'is of type: ', type(item))
-                    return False
-
-            #Check is_warning column is True/False
-            for item in [row[3] for row in data_main]:
-                if not isinstance(item, bool):
-                    MessageBox('is_warning must be True or False', item, 'is of type: ', type(item))
-                    return False
-
-            #Check warning_timeout column is a number or none
-            for item in [row[4] for row in data_main]:
-                if not isinstance(item, (float, int,)):
-                    MessageBox('warning_timeout must be of type float or int', item, 'is of type: ', type(item))
-                    return False
-
-            #Check warning_message column is a string or none
-            for item in [row[5] for row in data_main]:
-                if not isinstance(item, str):
-                    MessageBox('warning_message must be of type str', item, 'is of type: ', type(item))
-                    return False
-            
-            #Check is_alarm column is True/False
-            for item in [row[6] for row in data_main]:
-                if not isinstance(item, bool):
-                    MessageBox('is_alarm must be True or False', item, 'is of type: ', type(item))
-                    return False
-
-            #Check alarm_timeout column is a number or none
-            for item in [row[7] for row in data_main]:
-                if not isinstance(item, (float, int,)):
-                    MessageBox('alarm_timeout must be of type float or int', item, 'is of type: ', type(item))
-                    return False
-
-            #Check alarm_message column is a string or none
-            for item in [row[8] for row in data_main]:
-                if not isinstance(item, str):
-                    MessageBox('alarm_message must be of type str', item, 'is of type: ', type(item))
-                    return False
-            
-            #Check triggers_action column is True/False
-            for item in [row[9] for row in data_main]:
-                if not isinstance(item, bool):
-                    MessageBox('triggers_action must be True or False', item, 'is of type: ', type(item))
-                    return False
-
-            #Check action_timeout column is a number or none
-            for item in [row[10] for row in data_main]:
-                if not isinstance(item, (int, float)):
-                    MessageBox('action_timeout must be of type float or int', item, 'is of type: ', type(item))
-                    return False
 
 
-            ##TODO action column checks
-            #
-            #Check log_entrance is True or False
-            for item in [row[12] for row in data_main]:
-                if not isinstance(item, bool):
-                    MessageBox('log_entrance must be True or False', item, 'is of type: ', type(item))
-                    return False
+        if not isinstance(data, list):
+            raise TypeError('Invalid data format')
 
+        if not data[0] == self._data_array_headers:
+            raise ValueError('Invalid header row, must be: ' + self._data_array_headers)
 
+        data_main = data[1:]
+        if len(data_main) != len(self._truth_table):
+            raise ValueError('Number of rows must be same as number of states')
 
+        #State column is in order, 0,1,2,.. n
+        first_col = [row[0] for row in data_main]
+        if first_col != list(range(0, len(self._truth_table))):
+            raise ValueError('State column must be in format 0, 1, 2, ...n')
 
+        for row in data_main:
+            if not isinstance(row[1], str): raise TypeError('status column must be of type str')
+            if not isinstance(row[2], str): raise TypeError('icon_layer column must be of type str')
 
+            if not isinstance(row[3],         bool): raise TypeError('is_warning column must be of type bool')
+            if not isinstance(row[4], (int, float)): raise TypeError('warning_timeout column must be of type float')
+            if not isinstance(row[5],         str): raise TypeError('warning_message column must be of type str')
 
-        except Exception as e:
-            MessageBox('Device state table data array testing failed', '\n', data, '\n', e)
-            return False
+            if not isinstance(row[6],         bool): raise TypeError('is_alarm column must be of type bool')
+            if not isinstance(row[7], (int, float)): raise TypeError('alarm_timeout column must be of type (int, float)')
+            if not isinstance(row[8],          str): raise TypeError('alarm_message column must be of type str')
+
+            if not isinstance( row[9],             bool): raise TypeError('triggers_action must be of type bool')
+            if not isinstance(row[10],     (int, float)): raise TypeError('action_timeout must be of type (int, float)')
+            if not isinstance(row[11],(int, type(None))): raise TypeError('action must be of type int')
+            if not isinstance(row[12],             bool): raise TypeError('log_entrance must be of type bool')
 
 
         self.beginResetModel()
@@ -237,31 +166,30 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
         self._data = new_data
 
         self.endResetModel()
+
         return True
 
 
-    def dataArray(self):
+    def deviceStates(self):
         data = []
         data.append(self._data_array_headers[:])
 
         for i, row in enumerate(self._data):
-            status          = self._data[i][self.statusColumn()]
-            icon_layer      = self._data[i][self.iconLayerColumn()]
-            is_warning      = self._data[i][self.isWarningColumn()]
-            warning_timeout = self._data[i][self.warningTimeoutColumn()]
-            warning_message = self._data[i][self.warningMessageColumn()]
-            is_alarm        = self._data[i][self.isAlarmColumn()]
-            alarm_timeout   = self._data[i][self.alarmTimeoutColumn()]
-            alarm_message   = self._data[i][self.alarmMessageColumn()]
-            triggers_action = self._data[i][self.triggersActionColumn()]
-            action_timeout  = self._data[i][self.actionTimeoutColumn()]
-            action          = self._data[i][self.actionColumn()]
-            log_entrance    = self._data[i][self.logEntranceColumn()]
+            data.append([ i,
+                         self._data[i][self.statusColumn()],
+                         self._data[i][self.iconLayerColumn()],
+                         self._data[i][self.isWarningColumn()],
+                         self._data[i][self.warningTimeoutColumn()],
+                         self._data[i][self.warningMessageColumn()],
+                         self._data[i][self.isAlarmColumn()],
+                         self._data[i][self.alarmTimeoutColumn()],
+                         self._data[i][self.alarmMessageColumn()],
+                         self._data[i][self.triggersActionColumn()],
+                         self._data[i][self.actionTimeoutColumn()],
+                         self._data[i][self.actionColumn()],
+                         self._data[i][self.logEntranceColumn()] ])
 
-            data.append([i, status, icon_layer, is_warning, warning_timeout, warning_message, is_alarm, alarm_timeout, alarm_message, triggers_action, action_timeout, action, log_entrance])
-        
         return data
-
 
 
     def headerData(self, section, orientation, role):
@@ -274,38 +202,36 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
     def flags(self, index):
         if index.column() < len(self._truth_table[0]):
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
-        
-       
+
         elif index.column() in [self.warningTimeoutColumn(), self.warningMessageColumn()] and self._data[index.row()][self.isWarningColumn()] == False:
             return QtCore.Qt.ItemIsSelectable
-        
+
         elif index.column() in [self.alarmTimeoutColumn(), self.alarmMessageColumn()] and self._data[index.row()][self.isAlarmColumn()] == False:
             return QtCore.Qt.ItemIsSelectable
-        
+
         elif index.column() in [self.actionTimeoutColumn()] and self._data[index.row()][self.triggersActionColumn()] == False:
             return QtCore.Qt.ItemIsSelectable
-        
+
         else:
             return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
 
-    #FIXME the layer things need to really be a dropdown based on the layers availabe in the manual icon node
     def data(self, index, role):
         if role == QtCore.Qt.EditRole or role == QtCore.Qt.DisplayRole:
             row = index.row()
             col = index.column()
             return self._data[row][col]
-        
+
         elif role == QtCore.Qt.ToolTipRole:
             return 'Need to add a tooltip'
-        
+
         elif role == QtCore.Qt.TextAlignmentRole:
-            return QtCore.Qt.AlignCenter   
+            return QtCore.Qt.AlignCenter
 
 
     def setData(self, index, value, role = QtCore.Qt.EditRole):
         if role == QtCore.Qt.EditRole:
-            if type(value) == type(QtCore.QVariant()): 
+            if type(value) == type(QtCore.QVariant()):
                 value = value.toPyObject()
 
             row = index.row()
@@ -323,7 +249,7 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
                 self._data[row][col] = value
                 self.dataChanged.emit(index, index)
                 return True
-            
+
             elif col in [self.warningTimeoutColumn(), self.alarmTimeoutColumn(), self.actionTimeoutColumn()]:
                 if value == None:
                     self._data[row][col] = None
@@ -332,14 +258,14 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
 
                 self.dataChanged.emit(index, index)
                 return True
-           
+
             #FIXME
             elif col == self.actionColumn():
                 value = str(value)
                 self._data[row][col] = value
                 self.dataChanged.emit(index, index)
                 return True
-            
+
             elif col in [self.isWarningColumn(), self.isAlarmColumn(), self.triggersActionColumn(), self.logEntranceColumn()]:
                 if value == True:
                     self._data[row][col] = True
@@ -347,6 +273,5 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
                     self._data[row][col] = False
                 self.dataChanged.emit(index, index)
                 return True
-       
-        return False
 
+        return False

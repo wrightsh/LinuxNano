@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 import pytest
-
 from PyQt5 import QtCore, QtWidgets, QtGui
 import xml.etree.ElementTree as ET
 
@@ -11,302 +9,217 @@ from linuxnano.tool_editor import ToolEditor, NodeEditor, SystemEditor, DeviceEd
 
 from linuxnano.message_box import MessageBox
 from linuxnano.flags import TestingFlags
+from linuxnano.strings import strings
+
+
+@pytest.fixture
+def open_window(qtbot):
+    def callback(window):
+        widget = window()
+        qtbot.addWidget(widget)
+        widget.show()
+        qtbot.wait_for_window_shown(widget)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        return widget
+
+    return callback
 
 
 @pytest.fixture()
-def win():
-    win = QtWidgets.QWidget()
-    win.resize(600,600)
-    win.show()
-
-    yield win
-
-
-@pytest.fixture()
-def tool_model_1():
-    tree = ET.parse('tests/tool_model.xml')
+def tool_model():
+    tree = ET.parse('tests/tools/tool_model_1.xml')
     tool_model = ToolModel()
     tool_model.loadTool(tree)
 
     return tool_model
 
 
+@pytest.fixture()
+def indexes(tool_model):
+    indexes = {strings.SYSTEM_NODE      : [],
+               strings.DEVICE_NODE      : [],
+               strings.DEVICE_ICON_NODE : [],
+               strings.D_IN_NODE        : [],
+               strings.A_IN_NODE        : [],
+               strings.D_OUT_NODE       : [],
+               strings.A_OUT_NODE       : []}
 
-def test_ToolEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Tool Editor Window")
 
-    tool_editor = ToolEditor(tool_model_1)
+    tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
 
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(tool_editor)
+    #Systems
+    for row in range(tool_model.rowCount(tool_index)):
+        indexes[strings.SYSTEM_NODE].append(tool_index.child(row, 0))
 
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
-    MessageBox("Manual testing of the tool editor window")
-    qtbot.stopForInteraction()
+    #Devices
+    for sys_index in indexes[strings.SYSTEM_NODE]:
+        for row in range(tool_model.rowCount(sys_index)):
+            indexes[strings.DEVICE_NODE].append(sys_index.child(row, 0))#This column matters!
 
+    #children of a device
+    for index in indexes[strings.DEVICE_NODE]:
+        for row in range(tool_model.rowCount(index)):
 
+            if index.child(row,0).internalPointer().typeInfo() == strings.D_IN_NODE:
+                indexes[strings.D_IN_NODE].append(index.child(row, 0))
 
-def test_NodeEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Node Editor")
+            if index.child(row,0).internalPointer().typeInfo() == strings.D_OUT_NODE:
+                indexes[strings.D_OUT_NODE].append(index.child(row, 0))
 
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
-    device_index_1 = system_index.child(0, 0)
-    device_index_2 = system_index.child(1, 0)
-    device_index_3 = system_index.child(2, 0)
+            if index.child(row,0).internalPointer().typeInfo() == strings.A_IN_NODE:
+                indexes[strings.A_IN_NODE].append(index.child(row, 0))
 
-    editor = NodeEditor()
-    editor.setModel(tool_model_1)
+            if index.child(row,0).internalPointer().typeInfo() == strings.A_OUT_NODE:
+                indexes[strings.A_OUT_NODE].append(index.child(row, 0))
 
-    editor.setSelection(system_index)
+    return indexes
 
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
 
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
+def test_ToolEditor(qtbot, open_window, tool_model):
+    editor = open_window(ToolEditor)
+    editor.setWindowTitle("Tool Editor")
+    editor.setModel(tool_model)
 
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(device_index_1)
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Tool Editor Testing")
+        qtbot.stopForInteraction()
 
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(device_index_2)
 
-    MessageBox("Manual testing of the node editor window")
-    qtbot.stopForInteraction()
+def test_NodeEditor(qtbot, open_window, tool_model, indexes):
+    editor = open_window(NodeEditor)
+    editor.setWindowTitle("Node Editor")
+    editor.setModel(tool_model)
 
-def test_SystemEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("System Editor")
+    for index in indexes[strings.DEVICE_NODE]:
+        editor.setSelection(index)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
 
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
+        qtbot.mouseClick(editor.ui_name, QtCore.Qt.LeftButton)
+        qtbot.mouseClick(editor.ui_description, QtCore.Qt.LeftButton)
+        assert editor.isVisible()
 
-    editor = SystemEditor()
-    editor.setModel(tool_model_1)
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Node Editor Manual Testing")
+        qtbot.stopForInteraction()
 
-    editor.setSelection(system_index)
 
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
+def test_SystemEditor(qtbot, open_window, tool_model, indexes):
+    editor = open_window(SystemEditor)
+    editor.setWindowTitle("System Editor")
+    editor.setModel(tool_model)
 
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
+    for index in indexes[strings.SYSTEM_NODE]:
+        editor.setSelection(index)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
 
+        qtbot.mouseClick(editor.ui_background_svg, QtCore.Qt.LeftButton)
+        assert editor.isVisible()
 
-    MessageBox("Manual testing of the system editor window")
-    qtbot.stopForInteraction()
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("System Editor Manual Testing")
+        qtbot.stopForInteraction()
 
 
-def test_DeviceEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Device Editor")
+def test_DeviceEditor(qtbot, open_window, tool_model, indexes):
+    editor = open_window(DeviceEditor)
+    editor.setWindowTitle("Device Editor")
+    editor.setModel(tool_model)
 
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
-    device_index_1 = system_index.child(0, 0)
-    device_index_2 = system_index.child(1, 0)
-    device_index_3 = system_index.child(2, 0)
+    for index in indexes[strings.DEVICE_NODE]:
+        editor.setSelection(index)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        assert editor.isVisible()
 
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Device Editor Testing")
+        qtbot.stopForInteraction()
 
-    editor = DeviceEditor()
-    editor.setModel(tool_model_1)
-    editor.setSelection(device_index_1)
 
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
-
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
-
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(device_index_1)
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(device_index_3)
-
-
-    MessageBox("It should have just changed between 3 devices")
-    MessageBox("Manual testing of the device editor window")
-    qtbot.stopForInteraction()
-
-
-def test_DeviceEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Device Editor")
-
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
-    device_index = system_index.child(0, 0)
-
-    editor = DeviceEditor()
-    editor.setModel(tool_model_1)
-
-    editor.setSelection(device_index)
-
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
-
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
-
-
-    MessageBox("Manual testing of the device editor window")
-    qtbot.stopForInteraction()
-
-
-
-def test_DeviceIconEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Device Icon Editor")
-
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
-    device_index = system_index.child(0, 0)
-    device_icon_index_1 = device_index.child(0, 0)
-    device_icon_index_xval = device_index.child(0, 14)
-
-    editor = DeviceIconEditor()
-    editor.setModel(tool_model_1)
-
-    editor.setSelection(device_icon_index_1)
-
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
-
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
-
-    #print(tool_model_1.data(device_icon_index_xval,QtCore.Qt.DisplayRole))
-    assert 11.11 == tool_model_1.setData(device_icon_index_xval,11.11)
-
-    MessageBox("Manual testing of the device icon editor window")
-    qtbot.stopForInteraction()
-
-def test_DigitalInputEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Digital Input Editor")
-
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
-    device_index = system_index.child(0, 0)
-    d_in_1_index = device_index.child(1,0)
-    d_in_2_index = device_index.child(2,0)
-
-
-    editor = DigitalInputEditor()
-    editor.setModel(tool_model_1)
-    editor.setSelection(d_in_1_index)
-
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
-
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
-
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(d_in_2_index)
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(d_in_1_index)
-
-
-    MessageBox("It should have just changed between 2 digital input nodes")
-    MessageBox("Manual testing of the digital input editor window")
-    qtbot.stopForInteraction()
-
-def test_DigitalOutputEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Digital Output Editor")
-
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
-    device_index = system_index.child(1, 0)
-    d_out_1_index = device_index.child(1,0)
-    d_out_2_index = device_index.child(2,0)
-
-    editor = DigitalOutputEditor()
-    editor.setModel(tool_model_1)
-    editor.setSelection(d_out_1_index)
-
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
-
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
-
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(d_out_2_index)
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(d_out_1_index)
-
-    MessageBox("Manual testing of the digital output editor window")
-    qtbot.stopForInteraction()
-
-def test_AnalogInputEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Analog Input Editor")
-
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
-    device_index = system_index.child(0, 0)
-    a_in_1_index = device_index.child(3,0)
-    a_in_2_index = device_index.child(4,0)
-
-    editor = AnalogInputEditor()
-    editor.setModel(tool_model_1)
-    editor.setSelection(a_in_1_index)
-
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
-
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
-
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(a_in_2_index)
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(a_in_1_index)
-
-    MessageBox("Manual testing of the analog input editor window")
-    qtbot.stopForInteraction()
-
-def test_AnalogOutputEditor(qtbot, win, tool_model_1):
-    if TestingFlags.ENABLE_MANUAL_TESTING is False: return
-    win.setWindowTitle("Analog Output Editor")
-
-    tool_index = tool_model_1.index(0, 0, QtCore.QModelIndex())
-    system_index = tool_index.child(0, 0)
-    device_index = system_index.child(1, 0)
-    a_out_1_index = device_index.child(3,0)
-
-    a_out_2_index = device_index.child(4,0)
-
-    editor = AnalogOutputEditor()
-    editor.setModel(tool_model_1)
-    editor.setSelection(a_out_1_index)
-
-    layout = QtWidgets.QVBoxLayout(win)
-    layout.addWidget(editor)
-
-    qtbot.addWidget(win)
-    with qtbot.waitActive(win, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):
-        pass
-
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(a_out_2_index)
-    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    editor.setSelection(a_out_1_index)
-
-    MessageBox("Manual testing of the analog output editor window")
-    qtbot.stopForInteraction()
+def test_DeviceIconEditor(qtbot, open_window, tool_model, indexes):
+    editor = open_window(DeviceIconEditor)
+    editor.setWindowTitle("Device Icon Editor")
+    editor.setModel(tool_model)
+
+                  #col, test_value
+    data_cols = [[14, 100.1],
+                 [15, 200.1],
+                 [16, 1.1],
+                 [17, 500.1],
+                 [19, 200.1],
+                 [20, 200.1],
+                 [21, 14]]
+
+    for index in indexes[strings.DEVICE_NODE]:
+
+        for col in data_cols:
+            icon_index = index.child(0, col[0])
+
+            editor.setSelection(icon_index)
+            qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+            tool_model.setData(icon_index,col[1])
+            assert col[1] == tool_model.data(icon_index, QtCore.Qt.DisplayRole)
+            assert editor.isVisible()
+
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Device Icon Editor Testing")
+        qtbot.stopForInteraction()
+
+
+def test_DigitalInputEditor(qtbot, open_window, tool_model, indexes):
+    editor = open_window(DigitalInputEditor)
+    editor.setWindowTitle("Digital Input Editor")
+    editor.setModel(tool_model)
+
+    for index in indexes[strings.D_IN_NODE]:
+        editor.setSelection(index)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        assert editor.isVisible()
+
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Digital Input Editor Testing")
+        qtbot.stopForInteraction()
+
+
+def test_DigitalOututEditor(qtbot, open_window, tool_model, indexes):
+    editor = open_window(DigitalOutputEditor)
+    editor.setWindowTitle("Digital Output Editor")
+    editor.setModel(tool_model)
+
+    for index in indexes[strings.D_OUT_NODE]:
+        editor.setSelection(index)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        assert editor.isVisible()
+
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Digital Output Editor Testing")
+        qtbot.stopForInteraction()
+
+
+def test_AnalogInputEditor(qtbot, open_window, tool_model, indexes):
+    editor = open_window(AnalogInputEditor)
+    editor.setWindowTitle("Analog Input Editor")
+    editor.setModel(tool_model)
+
+    for index in indexes[strings.A_IN_NODE]:
+        editor.setSelection(index)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        assert editor.isVisible()
+
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Analog Input Editor Testing")
+        qtbot.stopForInteraction()
+
+
+def test_AnalogOututEditor(qtbot, open_window, tool_model, indexes):
+    editor = open_window(AnalogOutputEditor)
+    editor.setWindowTitle("Analog Output Editor")
+    editor.setModel(tool_model)
+
+    for index in indexes[strings.A_OUT_NODE]:
+        editor.setSelection(index)
+        qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+        assert editor.isVisible()
+
+    if TestingFlags.ENABLE_MANUAL_TESTING:
+        MessageBox("Analog Output Editor Testing")
+        qtbot.stopForInteraction()

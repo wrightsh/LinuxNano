@@ -66,6 +66,11 @@ class ToolTreeView(QtWidgets.QTreeView):
                     export_dialog.setNameFilter('XML files (*.xml)')
                     export_dialog.setDefaultSuffix('xml')
                     if export_dialog.exec_() == QtWidgets.QFileDialog.Accepted:
+                        print("current index type: ", current_index.internalPointer().typeInfo())
+                        #if current_index.internalPointer().typeInfo() == strings.TOOL_NODE:
+                        #    print('get the parent')
+                        #    current_index = current_index.parent()
+
                         file = open(export_dialog.selectedFiles()[0],'w')
                         file.write(current_index.internalPointer().asXml())
                         file.close()

@@ -17,14 +17,12 @@ from linuxnano.device_state_table_model import DeviceStateTableModel
 
 
 
-@pytest.fixture()
-def win():
-    win = QtWidgets.QWidget()
-    win.resize(600,600)
-    win.setWindowTitle("State Table View")
-    win.show()
-
-    yield win
+@pytest.fixture(params=['tests/tools/tool_model_1.xml'])
+def tool_model(request):
+    tree = ET.parse(request.param)
+    tool_model = ToolModel()
+    tool_model.loadTool(tree)
+    return tool_model
 
 
 
@@ -33,7 +31,7 @@ def win():
 def test_node_attrs():
     node = Node()
     assert node.attrs() == {'description': '', 'name': 'unknown'}
-    
+
 
 def test_node_asXml():
     root = Node()
@@ -42,35 +40,32 @@ def test_node_asXml():
 
     root.addChild(child_1)
     root.addChild(child_2)
-    xml1 = '''<root>\n    <root description="" name="unknown"/>\n    <root description="" name="unknown"/>\n</root>\n'''    
-    xml2 = '''<root>\n    <root name="unknown" description=""/>\n    <root name="unknown" description=""/>\n</root>\n'''    
+    xml1 = '''<root description="" name="unknown">\n    <root description="" name="unknown"/>\n    <root description="" name="unknown_new"/>\n</root>\n'''
+    xml2 = '''<root name="unknown" description="">\n    <root name="unknown" description=""/>\n    <root name="unknown_new" description=""/>\n</root>\n'''
 
-    #For some reason the xml properties order are random, there's a qSetGlobalQHashSeed but I can't import QHash
-    assert root.asXml() in [xml1, xml2]
-    
+    assert root.asXml() in [xml1, xml2] #xml properties are in random order, there's a qSetGlobalQHashSeed but I can't import QHash
+
 
 def test_node_loadAttribFromXML():
     node = Node()
+    tree = ET.fromstring("<Tool_Node name='A_name' description='my desc'></Tool_Node>")
+    node.loadAttribFromXML(tree)
+    assert node.name == "A_name"
+    assert node.description == "my desc"
 
-    tree = ET.fromstring("<root><Tool_Node name='A name'></Tool_Node></root>")
-
-    for tool_item in tree.findall(strings.TOOL_NODE):
-        node.loadAttribFromXML(tool_item)
-
-    assert node.name == "A name"
-
-    
 
 def test_node_typeInfo():
     node = Node()
     assert node.typeInfo() == 'root'
 
+
 def test_node_addChild():
     root = Node()
     child_1 = Node()
-   
+
     root.addChild(child_1)
     assert child_1 == root.child(0)
+
 
 def test_node_insertChild():
     root = Node()
@@ -78,15 +73,14 @@ def test_node_insertChild():
     child_2 = Node()
     child_3 = Node()
 
-
     root.addChild(child_1)
     root.addChild(child_3)
-
     root.insertChild(1,child_2)
 
     assert child_1 == root.child(0)
     assert child_2 == root.child(1)
     assert child_3 == root.child(2)
+
 
 def test_node_children():
     root = Node()
@@ -102,18 +96,8 @@ def test_node_children():
 
     assert len(children) == 3
     assert children[1] == child_2
-
-def test_node_children():
-    root = Node()
-    child_1 = Node()
-    child_2 = Node()
-    child_3 = Node()
-
-    root.addChild(child_1)
-    root.addChild(child_2)
-    root.addChild(child_3)
-
     assert root.childCount() == 3
+
 
 def test_node_removeChild():
     root = Node()
@@ -127,15 +111,16 @@ def test_node_removeChild():
 
     root.removeChild(1)
     assert root.childCount() == 2
-    
-    root.removeChild(1)
-    assert root.childCount() == 1
 
     root.removeChild(1)
     assert root.childCount() == 1
-        
+
+    root.removeChild(1) #There's only a child at position 0
+    assert root.childCount() == 1
+
     root.removeChild(0)
     assert root.childCount() == 0
+
 
 def test_node_parent():
     root    = Node()
@@ -145,6 +130,7 @@ def test_node_parent():
 
     assert root.parent()    == None
     assert child_1.parent() == root
+
 
 def test_node_row():
     root    = Node()
@@ -160,36 +146,23 @@ def test_node_row():
     assert child_1.row() == 0
     assert child_2.row() == 1
     assert child_3.row() == 2
-    
+
+
 def test_node_setData():
     root = Node()
-    root.setData(0, "my name")
+    root.setData(0, "my_nam e") #It should remove the space
     root.setData(1, "typeinfo is hard coded")
     root.setData(2, "my description")
-    
-    assert root.data(0) == "my name"
+
+    assert root.data(0) == "my_name"
     assert root.data(1) == "root"
     assert root.data(2) == "my description"
-    
-def test_node_name_property():
-    root = Node()
-    root.name = "my name"
-    assert root.name == "my name"
 
-def test_node_description_property():
-    root = Node()
-    root.description = "my description"
-    assert root.description == "my description"
 
 def test_node_log():
     root    = Node()
     child_1 = Node()
-    child_2 = Node()
-    child_3 = Node()
-    
     root.addChild(child_1)
-    root.addChild(child_2)
-    root.addChild(child_3)
 
     assert isinstance(root.log(), str)
 
@@ -215,23 +188,23 @@ def test_SystemNode_iconResource():
 
 def test_SystemNode_setData():
     node = SystemNode()
-    node.setData(0, "my name")
+    node.setData(0, "my_system_name")
     node.setData(1, "typeinfo is hard coded")
     node.setData(2, "my description")
-    node.setData(10, strings.DEFAULT_SYSTEM_BACKGROUND) 
-    
-    assert node.data(0) == "my name"
+    node.setData(10, strings.DEFAULT_SYSTEM_BACKGROUND)
+
+    assert node.data(0) == "my_system_name"
     assert node.data(1) == strings.SYSTEM_NODE
     assert node.data(2) == "my description"
     assert node.data(10) == strings.DEFAULT_SYSTEM_BACKGROUND
 
 def test_SystemNode_backgroundSVG_property():
     node = SystemNode()
-    
+
     assert node.backgroundSVG == strings.DEFAULT_SYSTEM_BACKGROUND
     node.backgroundSVG = "invalid file path"
     assert node.backgroundSVG == strings.DEFAULT_SYSTEM_BACKGROUND
-   
+
 
 
 ########## DeviceNode ##########
@@ -255,11 +228,9 @@ def test_node_insertChild():
     d_out_1 = DigitalOutputNode()
     d_out_2 = DigitalOutputNode()
     d_out_3 = DigitalOutputNode()
-    
+
     device.addChild(d_out_1)
     device.addChild(d_out_3)
-    
-
     device.insertChild(1,d_out_2)
 
     assert d_out_1 == device.child(0)
@@ -271,22 +242,20 @@ def test_node_removeChild():
     d_out_1 = DigitalOutputNode()
     d_out_2 = DigitalOutputNode()
     d_out_3 = DigitalOutputNode()
-    
 
     device.addChild(d_out_1)
     device.addChild(d_out_2)
     device.addChild(d_out_3)
 
-
     device.removeChild(1)
     assert device.childCount() == 2
-    
+
     device.removeChild(1)
     assert device.childCount() == 1
 
     device.removeChild(1)
     assert device.childCount() == 1
-        
+
     device.removeChild(0)
     assert device.childCount() == 0
 
@@ -296,23 +265,19 @@ def test_DeviceNode_deviceStateTableModel():
     assert type(device.deviceStateTableModel()) == type(DeviceStateTableModel())
 
 
-
-############ TODO ##################33
-#def test_DeviceNode_state():
-#    device  = DeviceNode()
-#    device.state()
-
-
 def test_DeviceNode_halNodeChanged():
     device  = DeviceNode()
     d_out = DigitalOutputNode()
 
-    xml_string = "[['state','gui_name','is_used'],[0, 'Off',True],[1, 'On',True]]"
-    d_out.stateTableData = xml_string
-    
+    halPins=['pin_a']
+    states=['Open','Close']
+    isUsed=[True,True]
+
+    d_out.halPins = halPins
+    d_out.states = states
+    d_out.isUsed = isUsed
+
     device.addChild(d_out)
-    
-    #I guess manually call halNodeChanged?
     device.halNodeChanged()
 
 
@@ -335,37 +300,34 @@ def test_DeviceNode_setData():
 
 def test_DeviceNode_iconLayerList():
     device = DeviceNode()
-    
+
     icon_node = DeviceIconNode()
     icon_node.setData(10, 'linuxnano/resources/icons/valves/valve.svg')
 
     device.addChild(icon_node)
-   
+
     assert device.iconLayerList().names == ['closed', 'closing', 'open', 'opening', 'fault']
 
 
-
-
-def test_DeviceNode_deviceStateTableData():
-    xml_string = "[['state','gui_name','is_used'],[0, 'Off',True],[1, 'On',True]]"
-    
-    d_out = DigitalOutputNode()
-    d_out.stateTableData = xml_string
-
+def test_DeviceNode_deviceStates():
     device  = DeviceNode()
+    d_out = DigitalOutputNode()
+
+    halPins=['pin_a']
+    states=['Open','Close']
+    isUsed=[True,True]
+
+    d_out.halPins = halPins
+    d_out.states = states
+    d_out.isUsed = isUsed
+
     device.addChild(d_out)
+    device.halNodeChanged()
 
     xml_string_device = "[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message','triggers_action', 'action_timeout', 'action', 'log_entrance'],[0, 'Close', 'close', False,  0,'', False,  0,'', False, 0, None,  True],[1, 'Open' ,  'open',  True, 10, 'taking too long',  True, 20, 'failed to open', False, 0, None, False]]"
 
-
-    device.deviceStateTableData = xml_string_device
-    assert device.deviceStateTableData == ast.literal_eval(xml_string_device)
-
-
-
-
-
-
+    device.deviceStates = xml_string_device
+    assert device.deviceStates == ast.literal_eval(xml_string_device)
 
 
 
@@ -373,12 +335,12 @@ def test_DeviceNode_deviceStateTableData():
 def test_DeviceIconNode_typeInfo():
     node = DeviceIconNode()
     assert node.typeInfo() == strings.DEVICE_ICON_NODE
-   
+
 def test_DeviceIconNode_iconResource():
     node = DeviceIconNode()
     assert node.iconResource() == strings.TREE_ICON_DEVICE_ICON_NODE
-   
-  
+
+
 def test_DeviceIconNode_setData():
     node = DeviceIconNode()
 
@@ -386,7 +348,7 @@ def test_DeviceIconNode_setData():
     d_out_1 = DigitalOutputNode()
     d_out_2 = DigitalOutputNode()
     d_out_3 = DigitalOutputNode()
-   
+
     a_in_1 = AnalogInputNode()
     a_in_2 = AnalogInputNode()
 
@@ -396,29 +358,29 @@ def test_DeviceIconNode_setData():
     device.addChild(a_in_1)
     device.addChild(a_in_2)
     device.addChild(node)
-    
+
     a_in_1.setData(0, 'AnalogName')
     a_in_2.setData(0, 'AnalogName2')
 
-    
+
     node.setData(10, 'linuxnano/resources/icons/valves/valve.svg')
     node.setData(11, 'closing')
     node.setData(14, 51)
     node.setData(15, 57)
     node.setData(16, 1.12)
     node.setData(17, 90)
-    node.setData(18, 1) #Connected to a QComboBox so it uses enum and an index 
+    node.setData(18, 1) #Connected to a QComboBox so it uses enum and an index
     node.setData(19, 63)
     node.setData(20, 60)
     node.setData(21, 18)
-    
+
     assert node.data(10) == 'linuxnano/resources/icons/valves/valve.svg'
     assert node.data(11) == 'closing'
     assert node.data(14) == 51
     assert node.data(15) == 57
-    assert node.data(16) == 1.12 
-    assert node.data(17) == 90 
-    assert node.data(18) == 1 #Connected to a QComboBox so it uses enum and an index 
+    assert node.data(16) == 1.12
+    assert node.data(17) == 90
+    assert node.data(18) == 1 #Connected to a QComboBox so it uses enum and an index
     assert node.data(19) == 63
     assert node.data(20) == 60
     assert node.data(21) == 18
@@ -435,18 +397,18 @@ def test_DeviceIconNode_numberNodes():
     device.addChild(a_in_1)
     device.addChild(a_in_2)
     device.addChild(node)
-    
+
     a_in_1.setData(0, 'Pressure')
     a_in_2.setData(0, 'Flow')
 
     assert node.numberNodes().names == ['None', 'Pressure', 'Flow']
- 
+
 def test_DeviceIconNode_layers():
     node = DeviceIconNode()
     node.setData(10, 'linuxnano/resources/icons/valves/valve.svg')
-    
+
     assert node.layers().names == ['closed', 'closing', 'open', 'opening', 'fault']
-   
+
 
 
 
@@ -464,11 +426,11 @@ def test_DigitalInputNode_name():
     node_1 = DigitalInputNode()
     node_2 = DigitalInputNode()
     node_3 = DigitalInputNode()
-   
+
     device.addChild(node_1)
     device.addChild(node_2)
     device.addChild(node_3)
-   
+
     node_1.name = "signal_1"
     node_2.name = "signal-$$@/::\\!2"
     node_3.name = "signal 3"
@@ -482,7 +444,7 @@ def test_DigitalInputNode_name():
 
     assert node_2.name == "signal_1_new"
     assert node_3.name == "signal_1_new_new"
-    
+
 def test_DigitalInputNode_typeInfo():
     node = DigitalInputNode()
     assert node.typeInfo() == strings.D_IN_NODE
@@ -497,13 +459,13 @@ def test_DigitalInputNode_stateTableModel():
 
 def test_DigitalInputNode_numberOfStates():
     node = DigitalInputNode()
-    
+
     xml_string = "[['state','gui_name'],[0, 'Button 1'],[1, 'Button 2'], [2, 'Button 3'], [3, 'Button 4']]"
     node.stateTableData = xml_string
 
     assert node.numberOfStates() == 4
     assert node.stateTableData == ast.literal_eval(xml_string)
-    
+
     xml_string = "[['state','gui_name'],[0, 'Off'],[1, 'On']]"
     node.stateTableData = xml_string
     assert node.numberOfStates() == 2
@@ -511,17 +473,17 @@ def test_DigitalInputNode_numberOfStates():
 
 def test_DigitalInputNode_states():
     node = DigitalInputNode()
-    
+
     xml_string = "[['state','gui_name'],[0, 'Button 1'],[1, 'Button 2'],[2, 'Button 3'],[3, 'Button 4']]"
     node.stateTableData = xml_string
-    
+
     states = ['Button 1','Button 2','Button 3','Button 4']
     assert node.states() == states
 
 def test_DigitalInputNode_stateTableData():
     good_xml = "[['state','gui_name'],[0, 'Off'],[1, 'On']]"
     malformed_xml = "[['state','gui_name'],[0, 'Off'],[1, 'On']]]"
-  
+
     node = DigitalInputNode()
     node.stateTableData = good_xml
     assert node.stateTableData == ast.literal_eval(good_xml)
@@ -544,13 +506,13 @@ def test_DigitalOutputNode_stateTableModel():
 
 def test_DigitalOutputNode_numberOfStates():
     node = DigitalOutputNode()
-    
+
     xml_string = "[['state','gui_name','is_used'],[0, 'Button 1',True],[1, 'Button 2',True],[2, 'Button 3',True],[3, 'NA',False]]"
     node.stateTableData = xml_string
 
     assert node.numberOfStates() == 4
     assert node.stateTableData == ast.literal_eval(xml_string)
-    
+
     xml_string = "[['state','gui_name','is_used'],[0, 'Off',True],[1, 'On',True]]"
     node.stateTableData = xml_string
     assert node.numberOfStates() == 2
@@ -558,19 +520,19 @@ def test_DigitalOutputNode_numberOfStates():
 
 def test_DigitalOutputNode_states():
     node = DigitalOutputNode()
-    
+
     xml_string = "[['state','gui_name','is_used'],[0, 'Button 1',True],[1, 'Button 2',True],[2, 'Button 3',True],[3, 'NA',False]]"
     node.stateTableData = xml_string
-    
+
     states = ['Button 1','Button 2','Button 3','NA']
     assert node.states() == states
 
 def test_DigitalOutputNode_manualDisplayType():
     node = DigitalOutputNode()
-    
+
     node.manualDisplayType = strings.MANUAL_DISPLAY_BUTTONS
     assert node.manualDisplayType == strings.MANUAL_DISPLAY_BUTTONS
-    
+
     node.manualDisplayType = strings.MANUAL_DISPLAY_COMBO_BOX
     assert node.manualDisplayType == strings.MANUAL_DISPLAY_COMBO_BOX
 
@@ -580,7 +542,7 @@ def test_DigitalOutputNode_manualDisplayType():
 def test_DigitalOutputNode_stateTableData():
     good_xml = "[['state','gui_name', 'is_used'],[0, 'Off',False],[1, 'On',False]]"
     malformed_xml = "[['state','gui_name', 'is_used'],[0, 'Off',False],[1, 'On',False']]"
-   
+
     node = DigitalOutputNode()
     node.stateTableData = good_xml
     assert node.stateTableData == ast.literal_eval(good_xml)
@@ -608,7 +570,7 @@ def test_AnalogInputNode_calibrationTableModel():
 
 def test_AnalogInputNode_units():
     node = AnalogInputNode()
-    
+
     node.units = 'mTorr'
     assert node.units == 'mTorr'
 
@@ -619,29 +581,29 @@ def test_AnalogInputNode_displayDigits():
     node = AnalogInputNode()
 
     assert node.displayDigits == strings.A_IN_DISPLAY_DIGITS_DEFAULT
-   
+
     node.displayDigits = -1
     assert node.displayDigits == 0
-    
+
     node.displayDigits = 9991
     assert node.displayDigits == strings.A_IN_DISPLAY_DIGITS_MAX
 
 def test_AnalogInputNode_displayScientific():
     node = AnalogInputNode()
     assert node.displayScientific == False
-   
+
     node.displayScientific = True
     assert node.displayScientific == True
-    
+
     node.displayScientific = 'ham'
     assert node.displayScientific == False
 
 def test_AnalogInputNode_stateTableData():
     node = AnalogInputNode()
-    
+
     good_xml      = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
     malformed_xml = "[['state','greater_than', 'gui_name'],['some', None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-   
+
     node.stateTableData = good_xml
     assert node.stateTableData == ast.literal_eval(good_xml)
     node.stateTableData = malformed_xml
@@ -651,7 +613,7 @@ def test_AnalogInputNode_calibrationTableData():
     node = AnalogInputNode()
     good_xml      = "[['hal_value','gui_value'],[0.0,0.0],[ 1.0, 12.4],[2, 24.8]]"
     malformed_xml = "[['hal_value','gui_value'],[0.0,0.0],[-1.0, 12.4],[2, 24.8]]"
-    
+
     node.calibrationTableData = good_xml
     assert node.calibrationTableData == ast.literal_eval(good_xml)
     node.calibrationTableData = malformed_xml
@@ -661,20 +623,20 @@ def test_AnalogInputNode_states():
     node = AnalogInputNode()
     xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
     node.stateTableData = xml_string
-    
+
     states = ['HiVac','Vac','Atmo']
     assert node.states() == states
 
 def test_AnalogInputNode_numberOfStates():
         node = AnalogInputNode()
-        
+
         xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-    
+
         node.stateTableData = xml_string
-    
+
         assert node.numberOfStates() == 3
         assert node.stateTableData == ast.literal_eval(xml_string)
-        
+
         xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac']]"
         node.stateTableData = xml_string
         assert node.numberOfStates() == 2
@@ -722,29 +684,29 @@ def test_AnalogOutputNode_units():
 def test_AnalogOutputNode_displayDigits():
     node = AnalogOutputNode()
     assert node.displayDigits == strings.A_OUT_DISPLAY_DIGITS_DEFAULT
-   
+
     node.displayDigits = -1
     assert node.displayDigits == 0
-    
+
     node.displayDigits = 9991
     assert node.displayDigits == strings.A_OUT_DISPLAY_DIGITS_MAX
 
 def test_AnalogOutputNode_displayScientific():
     node = AnalogOutputNode()
     assert node.displayScientific == False
-   
+
     node.displayScientific = True
     assert node.displayScientific == True
-    
+
     node.displayScientific = 'ham'
     assert node.displayScientific == False
 
 def test_AnalogOutputNode_stateTableData():
     node = AnalogOutputNode()
-    
+
     good_xml      = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
     malformed_xml = "[['state','greater_than', 'gui_name'],['some', None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-   
+
     node.stateTableData = good_xml
     assert node.stateTableData == ast.literal_eval(good_xml)
     node.stateTableData = malformed_xml
@@ -754,7 +716,7 @@ def test_AnalogOutputNode_calibrationTableData():
     node = AnalogOutputNode()
     good_xml      = "[['hal_value','gui_value'],[0.0,0.0],[ 1.0, 12.4],[2, 24.8]]"
     malformed_xml = "[['hal_value','gui_value'],[0.0,0.0],[-1.0, 12.4],[2, 24.8]]"
-    
+
     node.calibrationTableData = good_xml
     assert node.calibrationTableData == ast.literal_eval(good_xml)
     node.calibrationTableData = malformed_xml
@@ -764,7 +726,7 @@ def test_AnalogOutputNode_states():
     node = AnalogOutputNode()
     xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
     node.stateTableData = xml_string
-    
+
     states = ['HiVac','Vac','Atmo']
     assert node.states() == states
 
@@ -790,20 +752,14 @@ def test_AnalogOutputNode_manualDisplayType():
 
 def test_AnalogOutputNode_numberOfStates():
     node = AnalogOutputNode()
-    
+
     xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
     node.stateTableData = xml_string
 
     assert node.numberOfStates() == 3
     assert node.stateTableData == ast.literal_eval(xml_string)
-    
+
     xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac']]"
     node.stateTableData = xml_string
     assert node.numberOfStates() == 2
     assert node.stateTableData == ast.literal_eval(xml_string)
-
-
-
-
-
-

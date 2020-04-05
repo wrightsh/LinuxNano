@@ -1,0 +1,20 @@
+<root>
+  <Tool_Node description='for testing' name='Tool'>
+    <System_Node description="Main Chamber" backgroundSVG="linuxnano/resources/icons/evaporator_background.svg" name="Chamber">
+        <Device_Node deviceStateTableData="[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message', 'triggers_action', 'action_timeout', 'action', 'log_entrance'], [0, 'Closed', 'closed', False, 0, '', False, 0, '', False, 0, None, True], [1, 'Open', 'open', False, 0, '', False, 0, '', False, 0, None, True]]" description="vents the chamber" name="Vent Valve">
+            <Device_Icon_Node scale="1" x="0" numberFontSize="12" description="" numberNode="None" numberY="0" numberX="40" name="Icon" rotation="0" y="0" svg="/mnt/hgfs/LinuxNano/LinuxNano/linuxnano/resources/icons/valves/valve.svg"/>
+            <Digital_Output_Node description="Opens the valve" stateTableData="[['state', 'gui_name', 'is_used'], [0, 'Close', True], [1, 'Open', True]]" name="Output" manualDisplayType="buttons"/>
+        </Device_Node>
+        <Device_Node deviceStateTableData="[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message', 'triggers_action', 'action_timeout', 'action', 'log_entrance'], [0, 'Closed', 'closed', False, 0, '', False, 0, '', False, 0, None, True], [1, 'Open', 'open', False, 0, '', False, 0, '', False, 0, None, True]]" description="" name="Soft Pump">
+            <Device_Icon_Node scale="1" x="10" numberFontSize="12" description="" numberNode="None" numberY="0" numberX="0" name="Icon" rotation="90" y="100" svg="/mnt/hgfs/LinuxNano/LinuxNano/linuxnano/resources/icons/valves/valve.svg"/>
+            <Digital_Output_Node description="" stateTableData="[['state', 'gui_name', 'is_used'], [0, 'Close', True], [1, 'Open', True]]" name="Output" manualDisplayType="buttons"/>
+        </Device_Node>
+        <Device_Node deviceStateTableData="[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message', 'triggers_action', 'action_timeout', 'action', 'log_entrance'], [0, 'Fault', 'fault', False, 0, '', False, 0, '', False, 0, None, True], [1, 'Fault', 'fault', False, 0, '', False, 0, '', False, 0, None, True], [2, 'Opening', 'opening', False, 0, '', False, 0, '', False, 0, None, True], [3, 'Closed', 'closed', False, 0, '', False, 0, '', False, 0, None, True], [4, 'Open', 'open', False, 0, '', False, 0, '', False, 0, None, True], [5, 'Closing', 'closing', False, 0, '', False, 0, '', False, 0, None, True], [6, 'Opening', 'opening', False, 0, '', False, 0, '', False, 0, None, True], [7, 'Closing', 'closing', False, 0, '', False, 0, '', False, 0, None, True]]" description="" name="Full Pump">
+            <Device_Icon_Node scale="1" x="10" numberFontSize="12" description="" numberNode="None" numberY="0" numberX="0" name="Icon" rotation="90" y="200" svg="/mnt/hgfs/LinuxNano/LinuxNano/linuxnano/resources/icons/valves/valve.svg"/>
+            <Digital_Output_Node description="" halPins="['lcec.0.1.dout_1']" stateTableData="[['state', 'gui_name', 'is_used'], [0, 'Open', True], [1, 'Close', True]]" name="output" manualDisplayType="buttons"/>
+            <Digital_Input_Node description="" halPins="['lcec.0.1']" stateTableData="[['state', 'gui_name'], [0, 'open'], [1, 'not_open']]" name="is_open"/>
+            <Digital_Input_Node description="" halPins="['lcec.0.2']" stateTableData="[['state', 'gui_name'], [0, 'closed'], [1, 'not_closed']]" name="is_closed"/>
+        </Device_Node>
+    </System_Node>
+</Tool_Node>
+</root>

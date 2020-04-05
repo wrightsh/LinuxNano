@@ -1,0 +1,29 @@
+  <Tool_Node description='for testing' name='My_Tool'>
+    <System_Node description='Main Chamber' name='Chamber_A' backgroundSVG='linuxnano/resources/icons/evaporator_background.svg'>
+      <Device_Node
+        name='Foreline Valve'
+        description='a simple valve with limit switches'
+        deviceStates="[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message',
+        'triggers_action', 'action_timeout', 'action', 'log_entrance'],
+
+        [0, 'Opening' , 'opening' ,  True, 10, 'taking too long',  True, 20,                                   'failed to open', False, 0, None, False],
+        [1, 'Open'    , 'open'    , False,  0,                '', False,  0,                                                 '', False, 0, None,  True],
+        [2, 'Opening' , 'opening' ,  True, 10, 'taking too long',  True, 20,                                   'failed to open', False, 0, None, False],
+        [3, 'Fault'   , 'fault'   , False,  0,                '',  True,  0,          'cannot have both limit switches at once', False, 0, None, False],
+
+        [4, 'Closing' , 'closing' ,  True, 10, 'taking too long',  True, 20,                          'failed to close', False, 0, None, False],
+        [5, 'Closing' , 'closing' ,  True, 10, 'taking too long',  True, 20,                          'failed to close', False, 0, None,  True],
+        [6, 'Closed'  , 'closed'  , False,  0,                '', False,  0,                                         '', False, 0, None, False],
+        [7, 'Fault'   , 'fault'   , False,  0,                '',  True,  0,  'cannot have both limit switches at once', False, 0, None, False]]"
+
+        >
+
+        <Device_Icon_Node svg='linuxnano/resources/icons/valves/valve.svg' x='10' y='35' scale='1.0' rotation='0' numberNode='Pressure' numberX='40' numberY='0'/>
+        <Digital_Output_Node description='Opens the valve' name='Output' halPins="['pin_a']" states="['Open','Close']" isUsed="[True,True]"/>
+        <Digital_Input_Node description='Closed limit switch' name='closed_limit' halPins="['pin_b']" states="['is_not_open','is_open']"/>
+        <Digital_Input_Node description='Open limit switch' name='open_limit' halPins="['pin_c']" states="['is_not_closed','is_closed']"/>
+      </Device_Node>
+
+
+      </System_Node>
+    </Tool_Node>

@@ -16,6 +16,7 @@ import queue
 #from ManualViewsOld import SVGItem2
 
 from linuxnano.strings import strings
+#from linuxnano.hardware import hardware
 from linuxnano.message_box import MessageBox
 from linuxnano.device_state_table_model import DeviceStateTableModel
 
@@ -44,14 +45,6 @@ def enum(enumerated):
 
 
 
-
-
-
-
-
-
-
-
 ########################################
 #
 #  ToolModel           :
@@ -75,7 +68,6 @@ class Node(object):
 
         self._name = "unknown"
         self._description = ''
-
         self._children = []
         self._parent = parent
 
@@ -103,6 +95,12 @@ class Node(object):
         node = doc.createElement(self.typeInfo())
         doc.appendChild(node)
 
+        attrs = self.attrs().items()
+        for key, value in attrs:
+            if isinstance(value, list):
+                value = str(value)
+            node.setAttribute(key, value)
+
         for i in self._children:
             i._recurseXml(doc, node)
 
@@ -125,7 +123,7 @@ class Node(object):
             i._recurseXml(doc, node)
 
 
-    def loadAttribFromXML(self,xml_tree):
+    def loadAttribFromXML(self, xml_tree):
         try:
             #Get all the attributes of the node
             attrs = iter(self.attrs().items())
@@ -145,12 +143,11 @@ class Node(object):
 
     def child(self, row):
         return self._children[row]
-        #XXX something is asking for child[-1]
 
     def addChild(self, child):
         self._children.append(child)
         child._parent = self
-
+        child.name = child.name
 
     def insertChild(self, position, child):
         if position < 0 or position > len(self._children):
@@ -158,6 +155,7 @@ class Node(object):
 
         self._children.insert(position, child)
         child._parent = self
+        child.name = child.name
         return True
 
 
@@ -194,10 +192,32 @@ class Node(object):
         elif column is 2: self.description = value
 
 
-    #Properties common to all nodes
     def name():
-        def fget(self): return self._name
-        def fset(self, value): self._name = str(value)
+        def fget(self):
+            return self._name
+
+        def fset(self,value):
+
+            '''Sibling names must be unique, only allowing alpha numeric, _ and - for now'''
+            value = str(value)
+            value = re.sub(r'[^a-zA-Z0-9_-]', '',value)
+
+            if self.parent() == None:
+                self._name = value
+
+            else:
+                sibling_names = []
+
+                for child in self.parent().children():
+                    if child != self:
+                        sibling_names.append(child.name)
+
+                while value in sibling_names:
+                    value = value + "_new"
+
+                self._name = value
+
+
         return locals()
     name = property(**name())
 
@@ -208,11 +228,9 @@ class Node(object):
         return locals()
     description = property(**description())
 
-
     # Loging of node
     def __repr__(self):
         return self.log()
-
 
     def log(self, tab_level=-1):
         output     = ""
@@ -230,19 +248,6 @@ class Node(object):
         output += "\n"
 
         return output
-
-
-        # XXX This will probaly go away
-        #def childLengths(self):
-        #    children = self.children()
-        #    lens = []
-        #    for i, child in enumerate(children):
-        #        if child.typeInfo() == strings.DIGITAL_INPUT_NODE or child.typeInfo() == strings.DIGITAL_OUTPUT_NODE:
-        #            lens.append(child.numberOfBits())
-        #        elif child.typeInfo() == strings.ANALOG_INPUT_NODE or child.typeInfo() == strings.ANALOG_OUTPUT_NODE:
-        #            lens.append(2)
-        #    return lens
-
 
 
 class ToolNode(Node):
@@ -267,24 +272,21 @@ class SystemNode(Node):
     def iconResource(self):
         return strings.TREE_ICON_SYSTEM_NODE
 
-
     def data(self, column):
         r = super().data(column)
 
         if column is 10: r = self.backgroundSVG
         return r
 
-
     def setData(self, column, value):
         super().setData(column, value)
 
         if column is 10: self.backgroundSVG = value
 
-
     def backgroundSVG():
         def fget(self): return self._background_svg
         def fset(self, value):
-            if os.path.isfile(value):
+            if isinstance(value, str) and os.path.isfile(value):
                 self._background_svg = value
             else:
                 self._background_svg =  strings.DEFAULT_SYSTEM_BACKGROUND
@@ -293,15 +295,12 @@ class SystemNode(Node):
 
 
 
-
 # This has to be fixed after the IO nodes are fixed
 class DeviceNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
-
         self._device_state_table_model = DeviceStateTableModel()
-
-        self._icon_layer = 'fault'
+        self._icon_layer = ''
         self._icon_value = '1.0'
         #self._current_state = 0
         # should this exist?
@@ -315,7 +314,6 @@ class DeviceNode(Node):
 
     def iconResource(self):
         return strings.TREE_ICON_DEVICE_NODE
-
 
     def addChild(self, child):
         super().addChild(child)
@@ -361,7 +359,7 @@ class DeviceNode(Node):
 
         for child in self._children:
             if child.typeInfo() in [strings.D_IN_NODE, strings.D_OUT_NODE, strings.A_IN_NODE, strings.A_OUT_NODE]:
-                states.append([child.name] + child.states())
+                states.append((child.name, child.states))
 
         model = self.deviceStateTableModel()
         model.setNodeStates(states)
@@ -371,19 +369,21 @@ class DeviceNode(Node):
     def data(self, column):
         r = super().data(column)
 
-        if   column is 10: r =  self.status
-        elif column is 11: r =  self._icon_layer #Will want to transmit the name for mapping this for manual icon view
-        elif column is 12: r =  self._icon_value
-        elif column is 15: r =  self._device_state_table_model
+        if   column is 10: r =  self._device_state_table_model
+        elif column is 11: r =  self.status
+
+        elif column is 12: r =  self._icon_layer #Will want to transmit the name for mapping this for manual icon view
+        elif column is 13: r =  self._icon_value
         #elif column is 16: r =  self.currentState()
         return r
 
     def setData(self, column, value):
         super().setData(column, value)
 
-        if   column is 10: pass#self.status = value
-        elif column is 11: self._icon_layer = str(value)
-        elif column is 12: pass
+        if   column is 10: pass
+        elif column is 11: self.status = str(value)
+
+        elif column is 12: self._icon_layer = str(value)
         elif column is 15: pass
         #elif column is 16: self.setCurrentState(value)
 
@@ -399,21 +399,19 @@ class DeviceNode(Node):
     def status(self):
         return 'TODO Data DeviceNode status'
 
-    def deviceStateTableData():
+    def deviceStates():
         def fget(self):
-            return self.deviceStateTableModel().dataArray()
+            return self.deviceStateTableModel().deviceStates()
 
         def fset(self, value):
             try:
                 my_arr = ast.literal_eval(value)
-                self.deviceStateTableModel().setDataArray(my_arr)
+                self.deviceStateTableModel().setDeviceStates(my_arr)
             except Exception as e:
                 MessageBox("Malformed device state table data", e, value)
 
-
-
         return locals()
-    deviceStateTableData = property(**deviceStateTableData())
+    deviceStates = property(**deviceStates())
 
     def iconNode(self):
         for i, child in enumerate(self.children()):
@@ -694,15 +692,11 @@ class DeviceIconNode(Node):
         #self._icon_number_node_index = None  #QModelIndex of the node that we get the # from, calculated at runtime
         #self._icon_number_node_id = 0  # ID of the node that we pull the number from
 
-
-
     def typeInfo(self):
         return strings.DEVICE_ICON_NODE
 
-
     def iconResource(self):
         return strings.TREE_ICON_DEVICE_ICON_NODE
-
 
     def data(self, column):
         r = super().data(column)
@@ -715,11 +709,16 @@ class DeviceIconNode(Node):
         elif column is 15: r = self.y
         elif column is 16: r = self.scale
         elif column is 17: r = self.rotation
-        elif column is 18: r = self.numberNodes().names.index(self._number_node)  #connected to a QComboBox which passes an index
+        elif column is 18:
+            try:
+                r = self.numberNodes().names.index(self._number_node)  #connected to a QComboBox which passes an index
+            except:
+                self.numberNode = self.numberNodes().names[0] #If it fails then we set it to None which is 0
+                r = self.numberNodes().names.index(self._number_node)
+
         elif column is 19: r = self.numberX
         elif column is 20: r = self.numberY
         elif column is 21: r = self.numberFontSize
-
 
         return r
 
@@ -916,16 +915,13 @@ class HalNode(Node):
             - state_table_model : This table does the conversion between state (True/False) and the 'value' string
             - state_table_data : This property is used to load and save state table model
     '''
-    def __init__(self, parent=None):#, state_table_allow_is_used=False):
+    hal_pins = ['None']
+    def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._name = "IO_Node"
-
-        #if state_table_allow_is_used == True:  self._state_table_model = StateTableModel(allow_is_used = True)
-        #else:                                  self._state_table_model = StateTableModel(allow_is_used = False)
-        #
-        #self.stateTableModel().dataChanged.connect(self.stateTableChanged)
-        #self.stateTableModel().modelReset.connect(self.stateTableChanged)
+        self._name = 'HAL_Node'
+        self._hal_sampler_pin_id = None #HalNode.hal_sampler_pin_count
+        #HalNode.hal_sampler_pin_count += 1
 
 
     def typeInfo(self):
@@ -933,35 +929,32 @@ class HalNode(Node):
 
     def stateTableModel(self):
         raise NotImplementedError("Nodes that inherit HalNode must implement stateTableModel")
-        #return self._state_table_model
+
+    def halPins(self):
+        raise NotImplementedError("Nodes that inherit HalNode must implement halPins")
 
     def stateTableChanged(self):
-        try:
-            self.parent().halNodeChanged()
-        except Exception as e:
-            pass
-            #print("\nDevice node lacks halNodeChanged()")
-
-    def numberOfStates(self):
-        raise NotImplementedError("Nodes that inherit HalNode must implement numberOfStates")
-        #return self.stateTableModel().numberOfBits()
-
-    def states(self):
-        return self.stateTableModel().states()
+        self.stateTableModel().setAllowedHalPins(self.__class__.hal_pins)
+        self.parent().halNodeChanged()
 
     def data(self, column):
         r = super().data(column)
+        if column is 10: r = self.stateTableModel()
 
-        if   column is 11: r = self.numberOfStateBits
-        elif column is 20: r = self.stateTableModel()
+        #if   column is 11: r = self.numberOfStateBits
+        #elif column is 211: r = self.halPinNames().names.index(self.halPin) if self.halPin is not None else None
+        #elif column is 212: r = str(self._hal_sampler_pin_id)
+        #TODO: add hal pin here
 
         return r
 
     def setData(self, column, value):
         super().setData(column, value)
+        if column is 10: pass #stateTableModel is owned by the node and never set
 
-        if   column is 11: pass #Num bits is only set by the state_table_view
-        elif column is 20: pass #The state_table_model is owend by the node and never set again
+        #if   column is 11: pass #Num bits is only set by the state_table_view
+        #elif column is 211: self.halPin = self.halPinNames().names[value]
+        #elif column is 212: pass
 
 
     def name():
@@ -969,9 +962,7 @@ class HalNode(Node):
             return self._name
 
         def fset(self,value):
-            '''We have to keep the names unique among all children owed by a Device '''
-
-            #Only allowing alpha numeric, _ and - for now
+            '''Sibling names must be unique, only allowing alpha numeric, _ and - for now'''
             value = str(value)
             value = re.sub(r'[^a-zA-Z0-9_-]', '',value)
 
@@ -992,43 +983,58 @@ class HalNode(Node):
             except Exception as e:
                 print("HalNode Error {}".format(e))
 
-
         return locals()
     name = property(**name())
 
-    def stateTableData():
+
+    def signals(self):
+        signals = []
+        base_name = self.parent().parent().name + '.' + self.parent().name + '.' + self.name + '.'
+
+        for i, item in enumerate(self.halPins):
+            signals.append(base_name + str(i))
+
+        return signals
+
+
+
+
+    def states():
         def fget(self):
-            return self.stateTableModel().dataArray()
+            return self.stateTableModel().states()
 
         def fset(self, value):
             try:
-                my_arr = ast.literal_eval(value)
-                self.stateTableModel().setDataArray(my_arr)
+                value = ast.literal_eval(value)
+                self.stateTableModel().setNumberOfBits(int(math.log(len(value),2)))
+                self.stateTableModel().setStates(value)
                 self.stateTableChanged()
             except Exception as e:
-                MessageBox("Malformed state table data", e, value)
-
+                MessageBox("Malformed states data\nExpected: states=['state_1','state_2'] \nReceived:", e, value)
 
         return locals()
-    stateTableData = property(**stateTableData())
+    states = property(**states())
 
 
 class DigitalInputNode(HalNode):
     '''Represents a digital input (on/off), or group of inputs (low/medium/high) for a device.
 
         Digital inputs have:
-            - name           : The nodes name is used for the hal pin name, for >1 bit name_0, name_1, etc
+            - name              : The nodes name is used for the hal pin name, for >1 bit name_0, name_1, etc
+            - value             :  ?
             - state_table_model : This table does the conversion between state (True/False) and the 'value' string
-            - state_table_data : This property is used to load and save state table model
+            - state_table_data  : This property is used to load and save state table model
     '''
-
     def __init__(self, parent=None):
-        super().__init__(parent)#, state_table_allow_is_used = False)
+        super().__init__(parent)
 
-        self._value = 'Text Value'
+        self._name = 'Digital_Input_Node'
+        self._value = 'unknown'
+
         self._state_table_model = DigitalStateTableModel(allow_is_used = False)
         self._state_table_model.dataChanged.connect(self.stateTableChanged)
         self._state_table_model.modelReset.connect(self.stateTableChanged)
+        self._state_table_model.setAllowedHalPins(self.__class__.hal_pins)
 
     def typeInfo(self):
         return strings.D_IN_NODE
@@ -1044,12 +1050,27 @@ class DigitalInputNode(HalNode):
 
     def data(self, column):
         r = super().data(column)
-        if column is 22: r = self._value
+        if column is 20: r = self._value
         return r
 
     def setData(self, column, value):
         super().setData(column, value)
-        if column is 22: self._value  = value
+        if column is 20: self._value  = value
+
+    def halPins():
+        def fget(self):
+            return self.stateTableModel().halPins()
+
+        def fset(self, value):
+            try:
+                value = ast.literal_eval(value)
+                self.stateTableModel().setNumberOfBits(len(value))
+                self.stateTableModel().setHalPins(value)
+                self.stateTableChanged()
+            except Exception as e:
+                MessageBox("Malformed state table data", e, value)
+        return locals()
+    halPins = property(**halPins())
 
 
 class DigitalOutputNode(HalNode):
@@ -1062,16 +1083,19 @@ class DigitalOutputNode(HalNode):
             - manual_display_type : How should it be displayed on the manual window (buttons or dropdown)
     '''
 
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._value = 1
+        self._name = 'Digital_Output_Node'
+        self._value = 0
         self._manual_display_type = strings.MANUAL_DISPLAY_TYPES.names[0]
+        self._interlock = 255
 
         self._state_table_model = DigitalStateTableModel(allow_is_used = True)
         self._state_table_model.dataChanged.connect(self.stateTableChanged)
         self._state_table_model.modelReset.connect(self.stateTableChanged)
-
+        self._state_table_model.setAllowedHalPins(self.__class__.hal_pins)
 
     def typeInfo(self):
         return strings.D_OUT_NODE
@@ -1085,20 +1109,21 @@ class DigitalOutputNode(HalNode):
     def numberOfStates(self):
         return self._state_table_model.rowCount()
 
-    def states(self):
-        return self._state_table_model.states()
+    #def states(self):
+    #    return self._state_table_model.states()
 
     def data(self, column):
         r = super().data(column)
-        if   column is 21: r = strings.MANUAL_DISPLAY_TYPES.names.index(self.manualDisplayType)
-        elif column is 22: r = self._value
+        if   column is 20: r = self._value
+        elif column is 21: r = strings.MANUAL_DISPLAY_TYPES.names.index(self.manualDisplayType)
+        elif column is 22: r = self._interlock
         return r
 
     def setData(self, column, value):
         super().setData(column, value)
-        if   column is 21: self.manualDisplayType = strings.MANUAL_DISPLAY_TYPES.names[value]
-        elif column is 22: self._value  = value
-
+        if   column is 20: self._value  = value
+        elif column is 21: self.manualDisplayType = strings.MANUAL_DISPLAY_TYPES.names[value]
+        elif column is 22: self._interlock  = value
 
     def manualDisplayType():
         def fget(self): return self._manual_display_type
@@ -1107,6 +1132,35 @@ class DigitalOutputNode(HalNode):
                 self._manual_display_type = value
         return locals()
     manualDisplayType = property(**manualDisplayType())
+
+    def halPins():
+        def fget(self):
+            return self.stateTableModel().halPins()
+        def fset(self, value):
+            try:
+                value = ast.literal_eval(value)
+                self.stateTableModel().setNumberOfBits(len(value))
+                self.stateTableModel().setHalPins(value)
+                self.stateTableChanged()
+            except Exception as e:
+                MessageBox("Malformed state table data", e, value)
+        return locals()
+    halPins = property(**halPins())
+
+    def isUsed():
+        def fget(self):
+            return self.stateTableModel().isUsed()
+
+        def fset(self, value):
+            try:
+                value = ast.literal_eval(value)
+                self.stateTableModel().setNumberOfBits(int(math.log(len(value),2)))
+                self.stateTableModel().setIsUsed(value)
+                self.stateTableChanged()
+            except Exception as e:
+                MessageBox("Malformed state table data", e, value)
+        return locals()
+    isUsed = property(**isUsed())
 
 
 class AnalogInputNode(HalNode):
@@ -1128,6 +1182,7 @@ class AnalogInputNode(HalNode):
     '''
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._name = 'Analog_Input_Node'
         self._state_table_model = AnalogStateTableModel()
 
         self._calibration_table_model = CalibrationTableModel()
@@ -1253,6 +1308,7 @@ class AnalogOutputNode(AnalogInputNode):
     '''
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._name = 'Analog_Output_Node'
         self._manual_display_type = strings.ANALOG_MANUAL_DISPLAY_TYPES.names[0]
 
     def typeInfo(self):
