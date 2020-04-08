@@ -120,8 +120,10 @@ class DigitalOutputManualView(QtWidgets.QWidget):
         hbox.addWidget(self.name_label)
         hbox.addWidget(QtWidgets.QLabel(': '))
 
-        self.btn_group = QtWidgets.QButtonGroup()
+        self.btn_group = QtWidgets.QButtonGroup(self)
         self.btn_group.setExclusive(True)
+        self.was_clicked = False
+
 
         self._hal_pins = hal_pins
         self._is_used = is_used
@@ -131,7 +133,7 @@ class DigitalOutputManualView(QtWidgets.QWidget):
 
         for i, state in enumerate(states):
             if self._is_used[i] == True:
-                btn = QtWidgets.QPushButton(state)
+                btn = QtWidgets.QPushButton(state, self)
                 btn.setCheckable(True)
                 hbox.addWidget(btn)
                 self.btn_group.addButton(btn,i)
@@ -146,6 +148,7 @@ class DigitalOutputManualView(QtWidgets.QWidget):
 
     def onClicked(self, btn):
         state = self.btn_group.checkedId()
+        self.was_clicked = True
 
 
         #TODO change from pin name to the generated signal name
@@ -160,16 +163,19 @@ class DigitalOutputManualView(QtWidgets.QWidget):
                 subprocess.call(['halcmd', 'sets', signal, 'False'])
         #QtWidgets.QApplication.postEvent(self,QtGui.QKeyEvent(QtCore.QEvent.KeyPress, QtCore.Qt.Key_Enter, QtCore.Qt.NoModifier))
 
+
     @QtCore.pyqtProperty(int)
     def value(self):
         return self.btn_group.checkedId()
 
     @value.setter
     def value(self, value):
-        for btn in self.btn_group.buttons():
-            btn.setDown(False)
-        if value is not None:
-            self.btn_group.button(value).setDown(True)
+        #Another instance of this group was clicked, or it was done programatically
+        if self.was_clicked == False:
+            if value is not None:
+                self.btn_group.button(value).click()
+
+        self.was_clicked = False
 
 
     @QtCore.pyqtProperty(int)
@@ -179,6 +185,7 @@ class DigitalOutputManualView(QtWidgets.QWidget):
 
     @interlock.setter
     def interlock(self, value):
+        print("interlock_setter")
         try:
             for btn in self.btn_group.buttons():
                 if (value>>self.btn_group.id(btn))&1 != 0:

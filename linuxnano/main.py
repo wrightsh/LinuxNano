@@ -56,7 +56,6 @@ class Window(QtWidgets.QMainWindow):
 
 
         self.reader.setModel(self.tool_model)
-        self.reader.loadSampler()
         self.reader.start()
 
 

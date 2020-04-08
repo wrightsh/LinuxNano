@@ -920,6 +920,7 @@ class HalNode(Node):
         super().__init__(parent)
 
         self._name = 'HAL_Node'
+        self._sampler_pins = []
         self._hal_sampler_pin_id = None #HalNode.hal_sampler_pin_count
         #HalNode.hal_sampler_pin_count += 1
 
@@ -991,10 +992,30 @@ class HalNode(Node):
         signals = []
         base_name = self.parent().parent().name + '.' + self.parent().name + '.' + self.name + '.'
 
+        print('name', self.name)
         for i, item in enumerate(self.halPins):
             signals.append(base_name + str(i))
 
         return signals
+
+
+
+
+    def samplerPins(self):
+        return self._sampler_pins
+
+    def setSamplerPins(self, value):
+        #TODO
+        # - add checking that this is a list of numbers
+        # - check that it's length makes sense with the number of bits
+
+        #if len(value) != len(self.halPins()):
+        #    raise ValueError("Must have 1 index per hal pin")
+
+        if not isinstance(value, list):
+            raise TypeError("setSamplerPins must receive a list")
+
+        self._sampler_pins = value
 
 
 
