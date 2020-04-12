@@ -11,7 +11,6 @@ from linuxnano.tool_model import ToolModel
 from linuxnano.strings import strings
 from linuxnano.message_box import MessageBox
 
-
 @pytest.fixture
 def open_window(qtbot):
     def callback(window):
@@ -189,6 +188,7 @@ def test_twoOpen(qtbot, open_window, tool_model, indexes):
         #tool_model.setData(d_out, 64)
         #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
         #tool_model.setData(d_out, 255)
+
 
         qtbot.stopForInteraction()
 

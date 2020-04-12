@@ -11,6 +11,7 @@ from linuxnano.strings import strings
 
 from linuxnano.hardware import HalReader
 
+import gc, pprint
 
 # sudo halcompile --install linuxnano/HAL/hardware_sim.comp
 # clear; pytest 'tests/test_device_manual_view.py' -k 'test_two' -s
@@ -59,6 +60,19 @@ class Window(QtWidgets.QMainWindow):
         self.reader.start()
 
 
+        extractAction = QtWidgets.QAction("collect garbage", self)
+        extractAction.triggered.connect(self.collectGarbage)#gc.collect)
+
+        self.file_menu = self.menuBar().addMenu('&File')
+        self.file_menu.addAction(extractAction)
+
+    def collectGarbage(self):
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(gc.get_stats())
+        gc.collect()
+        pp.pprint(gc.get_stats())
+
+
     def closeEvent(self, event):
         quit_msg = "Are you sure you want to exit the program?"
         reply = QtWidgets.QMessageBox.question(self, 'Message', quit_msg, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
@@ -83,6 +97,7 @@ class Window(QtWidgets.QMainWindow):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
+    #app.setStyle("fusion") #Changing the style
     w = Window()
     w.show()
     sys.exit(app.exec_())

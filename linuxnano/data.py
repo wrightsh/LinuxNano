@@ -28,7 +28,7 @@ import copy
 import itertools
 import numpy as np
 
-
+from queue import Queue, Empty
 
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
@@ -921,8 +921,10 @@ class HalNode(Node):
 
         self._name = 'HAL_Node'
         self._sampler_pins = []
+        self._streamer_pins = []
         self._hal_sampler_pin_id = None #HalNode.hal_sampler_pin_count
         #HalNode.hal_sampler_pin_count += 1
+        self._manual_queue = Queue()
 
 
     def typeInfo(self):
@@ -1005,18 +1007,27 @@ class HalNode(Node):
         return self._sampler_pins
 
     def setSamplerPins(self, value):
-        #TODO
-        # - add checking that this is a list of numbers
-        # - check that it's length makes sense with the number of bits
-
-        #if len(value) != len(self.halPins()):
-        #    raise ValueError("Must have 1 index per hal pin")
-
         if not isinstance(value, list):
             raise TypeError("setSamplerPins must receive a list")
 
         self._sampler_pins = value
 
+
+    def streamerPins(self):
+        return self._streamer_pins
+
+    def setStreamerPins(self, value):
+        if not isinstance(value, list):
+            raise TypeError("setStreamerPins must receive a list")
+
+        self._streamer_pins = value
+
+
+    def manualQueueGet(self):
+        return self._manual_queue.get_nowait()
+
+    def manualQueuePut(self, value):
+        self._manual_queue.put_nowait(value)
 
 
 
@@ -1042,7 +1053,7 @@ class DigitalInputNode(HalNode):
 
         Digital inputs have:
             - name              : The nodes name is used for the hal pin name, for >1 bit name_0, name_1, etc
-            - value             :  ?
+            - value             : The bit representation of the IO
             - state_table_model : This table does the conversion between state (True/False) and the 'value' string
             - state_table_data  : This property is used to load and save state table model
     '''
@@ -1050,7 +1061,8 @@ class DigitalInputNode(HalNode):
         super().__init__(parent)
 
         self._name = 'Digital_Input_Node'
-        self._value = 'unknown'
+        self._value = 0
+        self._manual_display_type = strings.MANUAL_DISPLAY_TYPES.names[0]
 
         self._state_table_model = DigitalStateTableModel(allow_is_used = False)
         self._state_table_model.dataChanged.connect(self.stateTableChanged)
@@ -1065,9 +1077,6 @@ class DigitalInputNode(HalNode):
 
     def stateTableModel(self):
         return self._state_table_model
-
-    def numberOfStates(self):
-        return self._state_table_model.rowCount()
 
     def data(self, column):
         r = super().data(column)
@@ -1111,7 +1120,7 @@ class DigitalOutputNode(HalNode):
         self._name = 'Digital_Output_Node'
         self._value = 0
         self._manual_display_type = strings.MANUAL_DISPLAY_TYPES.names[0]
-        self._interlock = 255
+        self._interlock = 255 #Allow everything for 8 pins
 
         self._state_table_model = DigitalStateTableModel(allow_is_used = True)
         self._state_table_model.dataChanged.connect(self.stateTableChanged)
@@ -1129,9 +1138,6 @@ class DigitalOutputNode(HalNode):
 
     def numberOfStates(self):
         return self._state_table_model.rowCount()
-
-    #def states(self):
-    #    return self._state_table_model.states()
 
     def data(self, column):
         r = super().data(column)

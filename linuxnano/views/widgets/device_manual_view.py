@@ -40,11 +40,10 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
             wid = None
 
             if child_index.internalPointer().typeInfo() == strings.D_IN_NODE:
-                wid = DigitalInputManualView()
+                wid = DigitalInputManualView(child_index.internalPointer())
 
             elif child_index.internalPointer().typeInfo() == strings.D_OUT_NODE:
-                #wid = DigitalOutputManualView(child_index.internalPointer().states)
-                wid = DigitalOutputManualView(child_index.internalPointer().signals(), child_index.internalPointer().states, child_index.internalPointer().isUsed)
+                wid = DigitalOutputManualView(child_index.internalPointer())
 
             elif child_index.internalPointer().typeInfo() == strings.A_IN_NODE:
                 wid = AnalogInputManualView()
@@ -77,7 +76,7 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
 class DigitalInputManualView(QtWidgets.QWidget):
     '''Each digial input node is shown as a row
        Format: "Name : value"  '''
-    def __init__(self):
+    def __init__(self, node):
         super().__init__()
         self.mapper = QtWidgets.QDataWidgetMapper()
         hbox = QtWidgets.QHBoxLayout()
@@ -90,17 +89,34 @@ class DigitalInputManualView(QtWidgets.QWidget):
         hbox.addWidget(self.text_label)
         hbox.addStretch(1)
 
+        self._value = 0
+        self._value_names = node.states
+
     def setRootIndex(self, index):
         self.mapper.setRootIndex(index)
 
     def setCurrentModelIndex(self, index):
         self.mapper.setCurrentModelIndex(index)
 
+    @QtCore.pyqtProperty(int)
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        try:
+            self.text_label.setText(self._value_names[value])
+        except IndexError:
+            self.text_label.setText("Error")
+
+
+
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):model = model.sourceModel()
         self.mapper.setModel(model)
         self.mapper.addMapping(self.name_label, 0, bytes("text",'ascii'))
-        self.mapper.addMapping(self.text_label, 22, bytes("text",'ascii'))
+        self.mapper.addMapping(self, 20, bytes('value','ascii'))
+        #self.mapper.addMapping(self.text_label, 22, bytes("text",'ascii'))
 
 
 
@@ -110,20 +126,26 @@ Type 1: buttons linked to the actions
 Type 2: dropdown to select it or maybe radio buttons? or buttons but they stay clicked like a radio button?
 '''
 class DigitalOutputManualView(QtWidgets.QWidget):
-    def __init__(self, hal_pins, states, is_used):
+    def __init__(self, node):#hal_pins, states, is_used):
         super().__init__()
+
+        self._node = node
+        hal_pins = node.signals()
+        states = node.states
+        is_used = node.isUsed
+
+
         self.mapper = QtWidgets.QDataWidgetMapper()
-        hbox = QtWidgets.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout(self)
         self.setLayout(hbox)
 
         self.name_label = QtWidgets.QLabel('unknown_name')
         hbox.addWidget(self.name_label)
         hbox.addWidget(QtWidgets.QLabel(': '))
 
-        self.btn_group = QtWidgets.QButtonGroup(self)
+        self.btn_group = QtWidgets.QButtonGroup()
         self.btn_group.setExclusive(True)
-        self.was_clicked = False
-
+        self.via_value_setter = False
 
         self._hal_pins = hal_pins
         self._is_used = is_used
@@ -147,21 +169,12 @@ class DigitalOutputManualView(QtWidgets.QWidget):
         self.mapper.setCurrentModelIndex(index)
 
     def onClicked(self, btn):
+        if self.via_value_setter:
+            self.via_value_setter = False
+            return
+
         state = self.btn_group.checkedId()
-        self.was_clicked = True
-
-
-        #TODO change from pin name to the generated signal name
-        for i, signal in enumerate(self._hal_pins):
-            if (state>>i)&1 != 0:
-                print("halcmd sets " + signal + ' True')
-                subprocess.call(['halcmd', 'sets', signal, 'True'])
-                #subprocess.call(['halcmd', 'sets', signal, 'True'])
-            else:
-                print("halcmd sets " + signal + ' False')
-                #subprocess.call(['halcmd', 'setp', pin, 'False'])
-                subprocess.call(['halcmd', 'sets', signal, 'False'])
-        #QtWidgets.QApplication.postEvent(self,QtGui.QKeyEvent(QtCore.QEvent.KeyPress, QtCore.Qt.Key_Enter, QtCore.Qt.NoModifier))
+        self._node.manualQueuePut(state)
 
 
     @QtCore.pyqtProperty(int)
@@ -170,12 +183,12 @@ class DigitalOutputManualView(QtWidgets.QWidget):
 
     @value.setter
     def value(self, value):
-        #Another instance of this group was clicked, or it was done programatically
-        if self.was_clicked == False:
-            if value is not None:
+        if self.btn_group.checkedId() != value and value is not None:
+            self.via_value_setter = True
+            #this is needed until we change to using the hal streamer incase the outputs dont switch fast enough
+            if self.btn_group.button(value) is not None:
                 self.btn_group.button(value).click()
 
-        self.was_clicked = False
 
 
     @QtCore.pyqtProperty(int)

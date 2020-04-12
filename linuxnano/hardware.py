@@ -19,10 +19,14 @@ class HalReader():
         super().__init__()
 
         self.sampler_queue = Queue()
+        self.streamer_queue = Queue()
+
         self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.readSampler)
+        self.timer.timeout.connect(self.processData)
 
         self._tool_model = None
+        self._temp = False
+        self._previous_stream = []
 
         self.setup()
         self.findPins()
@@ -51,11 +55,22 @@ class HalReader():
         #sudo halcompile --install linuxnano/HAL/hardware_sim.comp
         subprocess.call(['halcmd', 'loadrt', 'hardware_sim'])
 
-
-        #Old
         #subprocess.call(['halcmd', 'loadusr', 'halscope'])
+
+        #Simulating a digital input with siggen.0.square in tool_model_1
         #subprocess.call(['halcmd', 'loadrt', 'siggen'])
         #subprocess.call(['halcmd', 'addf', 'siggen.0.update', 'gui'])
+        #subprocess.call(['halcmd', 'setp', 'siggen.0.amplitude', '0.5'])
+        #subprocess.call(['halcmd', 'setp', 'siggen.0.offset', '0.5'])
+        #subprocess.call(['halcmd', 'setp', 'siggen.0.frequency', '0.5'])
+
+        subprocess.call(['halcmd', 'loadrt', 'sim_encoder', 'num_chan=1'])
+        subprocess.call(['halcmd', 'setp', 'sim-encoder.0.speed', '0.005'])
+
+        subprocess.call(['halcmd', 'addf', 'sim-encoder.make-pulses', 'gui'])
+        subprocess.call(['halcmd', 'addf', 'sim-encoder.update-speed', 'gui'])
+
+
 
 
     def findPins(self):
@@ -82,6 +97,14 @@ class HalReader():
 
     def start(self):
         self.loadSampler()
+        self.connectSamplerSignals()
+
+        self.loadStreamer()
+        self.connectStreamerSignals()
+
+        subprocess.call(['halcmd', 'start'])
+        subprocess.call(['halcmd', 'loadusr', 'halmeter'])
+
         self.timer.start(100)
 
     def stop(self):
@@ -90,62 +113,86 @@ class HalReader():
         subprocess.call(['halcmd', 'unload', 'all'])
 
 
-    def loadSampler(self):
+    def samplerHalPins(self):
+        return DigitalInputNode.hal_pins + DigitalOutputNode.hal_pins
+
+    def samplerIndexes(self):
         tool_model = self.model()
         tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
+        indexes = tool_model.indexesOfType(strings.D_IN_NODE, tool_index)
+        indexes += tool_model.indexesOfType(strings.D_OUT_NODE, tool_index)
 
+        return indexes
+
+
+    def streamerIndexes(self):
+        tool_model = self.model()
+        tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
         indexes = tool_model.indexesOfType(strings.D_OUT_NODE, tool_index)
 
+        return indexes
+
+
+
+
+
+
+
+    def loadSampler(self):
         cfg = 'cfg='
-        pins_in_use = []
+        connected_pins = []
 
-        #find how many of each type of pin
-        #if a pin is used twice it needs a pointer to the first instance
-        for index in indexes:
+        #Each halpin is only loaded once
+        for index in self.samplerIndexes():
             for hal_pin in index.internalPointer().halPins:
-                if hal_pin is not None and hal_pin in DigitalOutputNode.hal_pins:
-                    if hal_pin not in pins_in_use:
+                if hal_pin in self.samplerHalPins() and hal_pin is not None:
+                    if hal_pin not in connected_pins:
                         cfg += 'b'
-                    pins_in_use.append(hal_pin)
+                    connected_pins.append(hal_pin)
 
-        #load sampler with one pin for each
         subprocess.call(['halcmd', 'loadrt', 'sampler', 'depth=100', cfg])
-        #print("\nCFG is: ", cfg)
+        print("\nSampler CFG is: ", cfg)
 
 
+    def loadStreamer(self):
+        cfg = 'cfg='
+        connected_pins = []
+
+        #Each halpin is only loaded once
+        for index in self.streamerIndexes():
+            for hal_pin in index.internalPointer().halPins:
+                if hal_pin in DigitalOutputNode.hal_pins and hal_pin is not None:
+                    if hal_pin not in connected_pins:
+                        cfg += 'b'
+                        self._previous_stream.append(0)
+                    connected_pins.append(hal_pin)
+
+        subprocess.call(['halcmd', 'loadrt', 'streamer', 'depth=100', cfg])
+        print("\nStreamer CFG is: ", cfg)
 
 
-
-
+    def connectSamplerSignals(self):
         sampler_pin = 0
-        pins_in_use = []
-        self._sampler_sequence = ()
+        connected_pins = [] #['pin_a','pin_b'], ordered by how its connected to the sampler
 
-        for index in indexes:
-            sys_name = tool_model.parent(tool_model.parent(index)).internalPointer().name
-            dev_name = tool_model.parent(index).internalPointer().name
-            pin_name = index.internalPointer().name
-
-            net_name = sys_name + '.' + dev_name + '.' + pin_name
-            pin_number = 0
-
+        for index in self.samplerIndexes():
             signal_names = index.internalPointer().signals()
-            sampler_pins = []
+            node_sampler_pins = []
 
             for i, hal_pin in enumerate(index.internalPointer().halPins):
-                if hal_pin is not None and hal_pin in DigitalOutputNode.hal_pins:
-                    if hal_pin not in pins_in_use:
-                        print('\nhalcmd', 'net', signal_names[i], hal_pin, '=>','sampler.0.pin.' + str(sampler_pin))
-                        feedback = subprocess.check_output(['halcmd', 'net', signal_names[i], hal_pin, '=>','sampler.0.pin.'+str(sampler_pin)])
+                if hal_pin in self.samplerHalPins() and hal_pin is not None:
+                    if hal_pin not in connected_pins:
+                        subprocess.call(['halcmd', 'net', signal_names[i], hal_pin, '=>','sampler.0.pin.'+str(sampler_pin)])
+                        print(         '\nhalcmd', 'net', signal_names[i], hal_pin, '=>','sampler.0.pin.'+str(sampler_pin))
+
+                        connected_pins.append(hal_pin)
+                        node_sampler_pins.append(sampler_pin)
                         sampler_pin += 1
-                        sampler_pins.append(sampler_pin-1)
 
                     else:
-                        sampler_pins.append(pins_in_use.index(hal_pin))
+                        node_sampler_pins.append(connected_pins.index(hal_pin))
 
-                    pins_in_use.append(hal_pin)
-
-            index.internalPointer().setSamplerPins(sampler_pins)
+            index.internalPointer().setSamplerPins(node_sampler_pins) # This is a list of indexes
 
 
         subprocess.call(['halcmd', 'setp', 'sampler.0.enable', 'True'])
@@ -153,107 +200,117 @@ class HalReader():
 
 
         # Sampler userspace component, stdbuf fixes bufering issue
-        self.p = subprocess.Popen(['stdbuf', '-oL', 'halcmd', 'loadusr', 'halsampler', '-c', '0', '-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+        self.p_sampler = subprocess.Popen(['stdbuf', '-oL', 'halcmd', 'loadusr', 'halsampler', '-c', '0', '-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
 
-        t = Thread(target=self.enqueue_output, args=(self.p.stdout, self.sampler_queue))
+        t = Thread(target=self.enqueue_sampler, args=(self.p_sampler.stdout, self.sampler_queue))
         t.daemon = True
         t.start()
 
 
 
-        subprocess.call(['halcmd', 'start'])
-        #subprocess.call(['halcmd', 'loadusr', 'halmeter'])
 
-        #subprocess.call(['halcmd', 'net', 'Chamber_A.ForelineValve.Output.0', '<=', 'hardware-sim.0.d-in-0'])
+    def connectStreamerSignals(self):
+        streamer_pin = 0
+        connected_pins = [] #['pin_a','pin_b'], ordered by how its connected to the streamer
+
+        for index in self.streamerIndexes():
+            signal_names = index.internalPointer().signals()
+            node_streamer_pins = []
+
+            for i, hal_pin in enumerate(index.internalPointer().halPins):
+                if hal_pin is not None and hal_pin in DigitalOutputNode.hal_pins:
+                    if hal_pin not in connected_pins:
+                        subprocess.call(['halcmd', 'net', signal_names[i], hal_pin, '=>','streamer.0.pin.'+str(streamer_pin)])
+                        print(         '\nhalcmd', 'net', signal_names[i], hal_pin, '=>','streamer.0.pin.'+str(streamer_pin))
+
+                        connected_pins.append(hal_pin)
+                        node_streamer_pins.append(streamer_pin)
+                        streamer_pin += 1
+
+                    else:
+                        raise ValueError("Cannot have halpin connected from multiple output nodes")
+                        #node_streamer_pins.append(connected_pins.index(hal_pin))
+
+            index.internalPointer().setStreamerPins(node_streamer_pins) # This is a list of indexes
+
+
+        subprocess.call(['halcmd', 'setp', 'streamer.0.enable', 'True'])
+        subprocess.call(['halcmd', 'addf', 'streamer.0', 'gui'])
+
+
+        # Streamer userspace component, stdbuf fixes bufering issue
+        self.p_streamer = subprocess.Popen(['halcmd', 'loadusr', 'halstreamer', '-c', '0'], stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
 
-    #def output_reader(self, process):
-    #    for line in iter(process.stdout.readline, b''):
-    #        print('LINE: {0}'.format(line.decode('utf-8')), end='')
+    def processData(self):
+        self.readSampler()
+        self.writeStreamer()
 
+
+    def writeStreamer(self):
+        new_stream = self._previous_stream[:]
+
+        for index in self.streamerIndexes():
+            try:
+                new_val = index.internalPointer().manualQueueGet()
+
+                if new_val is not None:
+                    streamer_pins = index.internalPointer().streamerPins()
+
+                    for shift, pin in enumerate(streamer_pins):
+                        if (new_val>>shift)&1 == 1:
+                            new_stream[pin] = 1
+                        else:
+                            new_stream[pin] = 0
+
+            except Empty:
+                pass
+
+        if new_stream != self._previous_stream:
+            print("new_stream: ", new_stream)
+
+            tmp = ''
+            for item in new_stream:
+                tmp += str(item)
+                tmp += ' '
+
+            tmp = tmp[:-1]+'\n'
+
+            self.p_streamer.stdin.write( tmp.encode() )#hstrip brackets, add \n and convert to bytes
+            self.p_streamer.stdin.flush()
+
+            self._previous_stream = new_stream
 
 
     def readSampler(self):
-        while True:
-            try:
-                data = self.sampler_queue.get_nowait()
-                #print('sampler:', data)
+        while not self.sampler_queue.empty():
+            data = self.sampler_queue.get_nowait()
+            #print('sampler:', data)
 
-                data = data.split(b' ')
-                data.pop(-1) #remove trailing b'\n'
-
-                current_sample = int(data[0])
-                data.pop(0)
+            data = data.split(b' ')
+            data.pop(-1) #remove trailing b'\n'
+            current_sample = int(data[0])
+            data.pop(0)
 
 
-                tool_model = self.model()
-                tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
+            for index in self.samplerIndexes():
+                #List of indexes for what each bits sampler position is
+                sampler_pins = index.internalPointer().samplerPins()
+                val = 0
 
-                indexes = tool_model.indexesOfType(strings.D_OUT_NODE, tool_index)
+                for shift, pin in enumerate(sampler_pins):
+                    bit = bool(int(data[pin])) #b'0' to False, b'1' to True
+                    val += bit<<shift
 
-                for index in indexes:
-
-                    #List of indexes for what each bits sampler position is
-                    sampler_pins = index.internalPointer().samplerPins()
-                    val = 0
-                    for shift, pin in enumerate(sampler_pins):
-                        bit = bool(int(data[pin])) #b'0' to False, b'1' to True
-                        val += bit<<shift
-
+                if val != self._tool_model.data(index.siblingAtColumn(20), QtCore.Qt.DisplayRole):
+                    self._tool_model.setData(index.siblingAtColumn(20), val)
+                    name = index.internalPointer().parent().name
                     #print("setting index:", name,  ': ', val)
 
-                    if val != self._tool_model.data(index.siblingAtColumn(20), QtCore.Qt.DisplayRole):
-                        self._tool_model.setData(index.siblingAtColumn(20), val)
-                        name = index.internalPointer().parent().name
-                        print("setting index:", name,  ': ', val)
 
 
-            except Empty:
-                break
-
-        return
-
-
-    def enqueue_output(self, out, queue):
+    def enqueue_sampler(self, out, queue):
         for line in iter(out.readline, b''):
             queue.put(line)
         out.close()
-
-
-
-
-
-    ''' OLD
-
-
-    def old_loadSampler(self):
-        ###### Sampler #####
-        self.p = subprocess.Popen(['stdbuf', '-oL', 'halcmd', 'loadusr', 'halsampler', '-c', '0', '-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
-
-        self.sampler_queue = Queue()
-        t = Thread(target=self.enqueue_output, args=(self.p.stdout, self.sampler_queue))
-        t.daemon = True
-        t.start()
-
-
-        return
-
-
-
-        tool_index = self._tool_model.index(0, 0, QtCore.QModelIndex())
-        system_index = tool_index.child(0, 0)
-        device_index = system_index.child(0, 0)
-
-
-        for row in range(self._tool_model.rowCount(device_index)):
-            if device_index.child(row,0).internalPointer().typeInfo() == strings.D_OUT_NODE:
-                d_out_index = device_index.child(row,20)
-
-        if self.prev:
-            new = 0
-        else:
-            new = 1
-        self.prev = new
-        self._tool_model.setData(d_out_index,new)
-        '''
