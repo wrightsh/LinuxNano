@@ -15,7 +15,7 @@ class SVGWidget(QtSvg.QSvgWidget):
 #
 #        self.setFlags(QtWidgets.QGraphicsItem.ItemIsSelectable|
 #                      QtWidgets.QGraphicsItem.ItemIsFocusable)
-#       
+#
 #        self.setAcceptHoverEvents(True)
 #
 #        self._tree_view = None
@@ -26,11 +26,7 @@ class SVGWidget(QtSvg.QSvgWidget):
 #
 #        self.setElementId(self._icon_layer)
 #
-#
-#
-#
-#
-#
+
 #
 #    def setIconFile(self,file):
 #        #XXX this needs some work to reduce assumptions about the svg and add error handling
@@ -47,20 +43,20 @@ class SVGWidget(QtSvg.QSvgWidget):
 #
 #            self.setFocus()
 #            self.show()
-#        
+#
 #
 #
 #
 #        except:
 #            pass
-#            #Error handling 
+#            #Error handling
 #
 #    def setDeviceIndex(self, val):
 #        self._device_index = val
 #
 #    def setDeviceParentIndex(self, val):
 #        self._device_parent_index = val
-#       
+#
 #    def setTreeView(self,val):
 #        self._tree_view = val
 #
@@ -72,7 +68,7 @@ class SVGWidget(QtSvg.QSvgWidget):
 #        try:
 #            self._tree_view.selectionModel().setCurrentIndex(  self._device_index,  QtGui.QItemSelectionModel.ClearAndSelect)
 #            self._tree_view.expand(self._device_parent_index)
-#      
+#
 #        except:
 #            pass
 #
@@ -82,21 +78,21 @@ class SVGWidget(QtSvg.QSvgWidget):
 #
 #    def hoverEnterEvent(self, event):
 #        self._selected_flag = True
-#        
+#
 #        self.setElementId(self._icon_layer_selected)
 #        self.show()
 #
 #    def hoverLeaveEvent(self, event):
 #        self._selected_flag = False
-#        
+#
 #        self.setElementId(self._icon_layer)
 #        self.show()
-#  
+#
 #
 #
 #    def layerSelected(self):
 #        return self._icon_layer_selected
-#        
+#
 #    def setLayerSelected(self,layer):
 #        self._icon_layer_selected = layer
 #
@@ -106,15 +102,15 @@ class SVGWidget(QtSvg.QSvgWidget):
 #
 #    def layer(self):
 #        return self._icon_layer
-#    
+#
 #    def setLayer(self,layer):
 #        self._icon_layer = layer
-#        
+#
 #        if not self._selected_flag:
 #            self.setElementId(self._icon_layer)
 #            self.show()
 #
-#     
+#
 #    def hoverMoveEvent(self, event):
 #        pass
 #
@@ -130,7 +126,7 @@ class SVGWidget(QtSvg.QSvgWidget):
 #        y       = float(y)
 #        rot     = float(rot)
 #        scale   = float(scale)
-#        
+#
 #        pos = QtCore.QPointF(x,y)
 #
 #        bounds = self.boundingRect()
@@ -141,7 +137,7 @@ class SVGWidget(QtSvg.QSvgWidget):
 #
 #        transform.translate( x , y  )
 #        transform.translate( center_x , center_y  )
-#    
+#
 #        transform.rotate( rot )
 #        transform.scale(scale,scale)
 #        transform.translate( -center_x , -center_y )

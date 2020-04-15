@@ -25,11 +25,7 @@ class HalReader():
         self.timer.timeout.connect(self.processData)
 
         self._tool_model = None
-        self._temp = False
-        self._previous_stream = []
 
-        self.setup()
-        self.findPins()
 
 
     def setModel(self, value):
@@ -37,6 +33,31 @@ class HalReader():
 
     def model(self):
         return self._tool_model
+
+
+    def start(self):
+        self._previous_stream = []
+        self.setup()
+        self.findPins()
+
+
+        self.loadSampler()
+        self.connectSamplerSignals()
+
+        self.loadStreamer()
+        self.connectStreamerSignals()
+
+        subprocess.call(['halcmd', 'start'])
+        subprocess.call(['halcmd', 'loadusr', 'halmeter'])
+
+        self.timer.start(100)
+
+
+    def stop(self):
+        self.timer.stop()
+        subprocess.call(['halcmd', 'stop'])
+        subprocess.call(['halcmd', 'unload', 'all'])
+
 
 
     def setupEthercat(self):
@@ -93,24 +114,6 @@ class HalReader():
 
         DigitalInputNode.hal_pins = d_in_pins
         DigitalOutputNode.hal_pins = d_out_pins
-
-
-    def start(self):
-        self.loadSampler()
-        self.connectSamplerSignals()
-
-        self.loadStreamer()
-        self.connectStreamerSignals()
-
-        subprocess.call(['halcmd', 'start'])
-        subprocess.call(['halcmd', 'loadusr', 'halmeter'])
-
-        self.timer.start(100)
-
-    def stop(self):
-        self.timer.stop()
-        subprocess.call(['halcmd', 'stop'])
-        subprocess.call(['halcmd', 'unload', 'all'])
 
 
     def samplerHalPins(self):
@@ -246,6 +249,19 @@ class HalReader():
     def processData(self):
         self.readSampler()
         self.writeStreamer()
+
+
+        tool_model = self.model()
+        tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
+        indexes = tool_model.indexesOfType(strings.DEVICE_NODE, tool_index)
+
+        for index in indexes:
+            device_state = index.internalPointer().stateFromChildren()
+
+            if device_state != self._tool_model.data(index.siblingAtColumn(16), QtCore.Qt.DisplayRole):
+                self._tool_model.setData(index.siblingAtColumn(16), device_state)
+                print("Device State: ", device_state)
+
 
 
     def writeStreamer(self):

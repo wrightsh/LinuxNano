@@ -272,8 +272,13 @@ class ToolModel(QtCore.QAbstractItemModel):
 
 
 
-    def indexesOfType(self, index_type, parent_index):
-        parent_node = parent_index.internalPointer() if parent_index.isValid() else self._root_node
+    def indexesOfType(self, index_type, parent_index=None):
+        try:
+            parent_node = parent_index.internalPointer() if parent_index.isValid() else self._root_node
+        except:
+            parent_index = self.index(0, 0, QtCore.QModelIndex())
+            parent_node = self._root_node
+
         indexes = []
 
         for row in range(self.rowCount(parent_index)):

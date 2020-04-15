@@ -300,9 +300,11 @@ class DeviceNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._device_state_table_model = DeviceStateTableModel()
+        self._state = 0
+
         self._icon_layer = ''
         self._icon_value = '1.0'
-        #self._current_state = 0
+
         # should this exist?
         #self._io_bits = 0
         #self._io_names  = []
@@ -330,28 +332,17 @@ class DeviceNode(Node):
     def deviceStateTableModel(self):
         return self._device_state_table_model
 
-    #TODO Next!
-    def state(self):
-        raise NotImplementedError("Need to write this still...")
-
+    def stateFromChildren(self):
         '''This returns the current state of the device, first reads all child nodes then lookups state in DeviceStateTable '''
+        state = 0
+        bit_weight = 1
 
-    '''
-    TODO Then we need to make an interface to set the outputs for a device.
-    This will be used for the Alarm action in the DeviceStateTable
-    It will also be used in the recipe 'set' command
-    We'll make a mirrored one for inputs and do both for manual page
-    ...need a VIEW class that generates buttons when passed a big array. then we can use a pyqtProperty to link the view
+        for child in self._children:
+            if child.typeInfo() in [strings.D_IN_NODE, strings.D_OUT_NODE, strings.A_IN_NODE, strings.A_OUT_NODE]:
+                state += bit_weight * child.state()
+                bit_weight *=  len(child.states)
 
-
-    DynamicOutputView
-        - linked via pyqtProperty
-        - recieves an array of outputs
-        - D_OUT: name: option, option, option - lookup old code!
-
-        one version will have buttons linked to setting outputs, other drop downs to save
-
-    '''
+        return state
 
 
     def halNodeChanged(self):
@@ -365,7 +356,6 @@ class DeviceNode(Node):
         model.setNodeStates(states)
 
 
-
     def data(self, column):
         r = super().data(column)
 
@@ -374,7 +364,7 @@ class DeviceNode(Node):
 
         elif column is 12: r =  self._icon_layer #Will want to transmit the name for mapping this for manual icon view
         elif column is 13: r =  self._icon_value
-        #elif column is 16: r =  self.currentState()
+        elif column is 16: r =  self._state
         return r
 
     def setData(self, column, value):
@@ -385,7 +375,7 @@ class DeviceNode(Node):
 
         elif column is 12: self._icon_layer = str(value)
         elif column is 15: pass
-        #elif column is 16: self.setCurrentState(value)
+        elif column is 16: self._state = int(value)
 
 
     def iconLayerList(self):
@@ -423,49 +413,10 @@ class DeviceNode(Node):
 
     ##########################################################
     ##########################################################
-    ##########################################################
-    ##########################################################
-    #def addIO(self, bits):
-    #    bits = int(bits)
-    #    self._io_bits += bits
-    #    self._combination_table_model.addNode(bits)
-
-    #def ioChildren(self):
-    #    children = self.children()
-    #    io_children = []
-
-    #    for i, child in enumerate(children):
-    #        if child.typeInfo() == strings.DIGITAL_INPUT_NODE:
-    #            io_children.append(child)
-
-    #    for i, child in enumerate(children):
-    #        if child.typeInfo() == strings.DIGITAL_OUTPUT_NODE:
-    #            io_children.append(child)
-
-    #    for i, child in enumerate(children):
-    #        if child.typeInfo() == strings.ANALOG_INPUT_NODE:
-    #            io_children.append(child)
-
-    #    for i, child in enumerate(children):
-    #        if child.typeInfo() == strings.ANALOG_OUTPUT_NODE:
-    #            io_children.append(child)
-
-    #    return io_children
-    ##########################################################
-    ##########################################################
     #def updateIconLayer(self):
     #    self._icon_object.setLayer(self.iconLayer())
     #def updateIconHoverLayer(self):
     #    self._icon_object.setHoverLayer(self.iconHoverLayer())
-
-    #def manualQueueGet(self):
-    #    return self._manual_queue.get()
-
-    #def manualQueuePut(self, row):
-    #    #check the format of row
-    #    row = [True,True,1.345,False]
-    #    self._manual_queue.put(row)
-
 
     #def iconLayer(self):
     #    row = self._combination_table_model.dataForRow(self._current_state_id)
@@ -477,109 +428,6 @@ class DeviceNode(Node):
 
     ##########################################################
     ##########################################################
-
-
-
-
-    #def digitalInputs(self):
-    #    ''' Returns a list of dictionaries of the devices state inputs
-    #        Used by the manual view
-    #
-    #        Return Format:
-    #          [ {name:"Interlock",  value:"On"},
-    #            {name:"Water"    ,  value:"On"}  ]
-
-    #
-
-    #    '''
-    #    inputs = []
-    #    childCount = self.childCount()
-
-    #    i = 0
-    #
-    #    while i < childCount:
-    #        myChild = self.child(i)
-    #
-    #        if (myChild.typeInfo() == strings.DIGITAL_INPUT_NODE):
-    #            name   = str(myChild.name())
-    #            value  = myChild.currentState()
-
-    #            input = {'name': name, 'value': value}
-    #            inputs.append(input)
-    #
-    #        i += 1
-    #
-    #    return inputs
-
-
-
-    #def analogInputs(self):
-    #    ''' Returns a list of dictionaries of the devices state inputs
-    #        Used by the manual view
-    #
-    #        Return Format:
-    #          [ {name:"Air Flow",  value: "124.1", units:" L/min"},
-    #            {name:"Pressure", value: "55.2", units:" mTorr"}  ]
-
-    #
-
-    #    '''
-    #    inputs = []
-    #    childCount = self.childCount()
-
-    #    i = 0
-    #
-    #    while i < childCount:
-    #        myChild = self.child(i)
-    #
-    #        if (myChild.typeInfo() == strings.ANALOG_INPUT_NODE):
-    #            name   = str(myChild.name())
-    #            value  = myChild.currentValue()
-    #            units  = myChild.units()
-
-    #            input = {'name': name, 'value': value, 'units':units}
-    #            inputs.append(input)
-    #
-    #        i += 1
-    #
-    #    return inputs
-
-
-
-    #def digitalOutputs(self):
-    #    ''' Returns a list of dictionaries of the devices state outputs
-    #        Used by the manual view
-    #
-    #        Return Format:
-    #            [  {name:"Lamp",  buttons:["On",   "Off"],   manualSetting: "On",    currentSetting: "None"},
-    #               {name:"Valve", buttons:["Open", "Close",  manualSetting: "Close", currentSetting: "None"]},
-    #               {name:"Light", buttons:["Low",  "High",   manualSetting: None,    currentSetting: "None"]} ]
-
-    #    '''
-    #    outputs = []
-    #    childCount = self.childCount()
-
-    #    i = 0
-    #
-    #    while i < childCount:
-    #        myChild = self.child(i)
-    #
-    #        if (myChild.typeInfo() == strings.DIGITAL_OUTPUT_NODE):
-    #            groupName   = str(myChild.name())
-    #            buttonNames = myChild.possibleStatesList()
-
-    #            buttonGroup = {'groupName': groupName, 'buttons': buttonNames, 'manualSetting' : None, 'currentSetting': None}
-
-
-    #            outputs.append(buttonGroup)
-    #
-    #
-    #        i += 1
-    #
-    #
-    #    return outputs
-    #
-
 
 
     #def setState(self):
@@ -994,7 +842,6 @@ class HalNode(Node):
         signals = []
         base_name = self.parent().parent().name + '.' + self.parent().name + '.' + self.name + '.'
 
-        print('name', self.name)
         for i, item in enumerate(self.halPins):
             signals.append(base_name + str(i))
 
@@ -1078,6 +925,10 @@ class DigitalInputNode(HalNode):
     def stateTableModel(self):
         return self._state_table_model
 
+    def state(self):
+        return self._value
+
+
     def data(self, column):
         r = super().data(column)
         if column is 20: r = self._value
@@ -1138,6 +989,9 @@ class DigitalOutputNode(HalNode):
 
     def numberOfStates(self):
         return self._state_table_model.rowCount()
+
+    def state(self):
+        return self._value
 
     def data(self, column):
         r = super().data(column)

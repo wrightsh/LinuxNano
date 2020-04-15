@@ -22,7 +22,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.reader = HalReader()
 
-        tree = ET.parse('tests/tools/tool_model_1.xml')
+        tree = ET.parse('tests/tools/tool_model_2.xml')
         self.tool_model = ToolModel()
         self.tool_model.loadTool(tree)
 
@@ -57,14 +57,23 @@ class Window(QtWidgets.QMainWindow):
 
 
         self.reader.setModel(self.tool_model)
-        self.reader.start()
+        #self.reader.start()
 
 
         extractAction = QtWidgets.QAction("collect garbage", self)
-        extractAction.triggered.connect(self.collectGarbage)#gc.collect)
+        extractAction.triggered.connect(self.collectGarbage)
+
+        stopAction = QtWidgets.QAction("Stop Hal Reader", self)
+        stopAction.triggered.connect(self.stopReader)
+
+        startAction = QtWidgets.QAction("Start Hal Reader", self)
+        startAction.triggered.connect(self.startReader)
 
         self.file_menu = self.menuBar().addMenu('&File')
         self.file_menu.addAction(extractAction)
+        self.file_menu.addAction(stopAction)
+        self.file_menu.addAction(startAction)
+
 
     def collectGarbage(self):
         pp = pprint.PrettyPrinter(indent=4)
@@ -83,8 +92,12 @@ class Window(QtWidgets.QMainWindow):
         else:
             event.ignore()
 
+    def startReader(self):
+        self.reader.start()
 
 
+    def stopReader(self):
+        self.reader.stop()
 
 
 
