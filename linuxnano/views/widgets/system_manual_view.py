@@ -8,13 +8,17 @@ class SystemManualView(QtWidgets.QAbstractItemView):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self._scene_box = QtCore.QRectF(0, 0, 1000, 1000)
+
         self._previous_index = None
         self.graphics_scene = QtWidgets.QGraphicsScene(self)
 
         #UI Stuff
-        self.graphics_view  = QtWidgets.QGraphicsView(self)
+        self.graphics_view = QtWidgets.QGraphicsView(self)
         self.graphics_view.setScene(self.graphics_scene)
         self.graphics_view.scale(1,1)
+
+        self._extra_margin = 10
 
         #Layout
         self.h_layout = QtWidgets.QHBoxLayout()
@@ -25,6 +29,38 @@ class SystemManualView(QtWidgets.QAbstractItemView):
         self._current_system_index = None
         self._device_icons = []
 
+    def resizeEvent(self, event):
+        self.graphics_view.fitInView(self._scene_box, QtCore.Qt.KeepAspectRatio)
+
+    #ToDo will this called too often?
+    def dataChanged(self, index_top_left, index_bottom_right, roles):
+
+        index = index_top_left
+        tool_model = self.model()
+
+
+        if index == self._current_system_index and index.column() == 10: #systems background svg is changed
+            self.setBackground(tool_model.data(index, QtCore.Qt.DisplayRole))
+
+        elif index.internalPointer().typeInfo() == strings.DEVICE_ICON_NODE:
+            if index.column() == 11:
+                my_icon_wid.layer = tool_model.data(index, QtCore.Qt.DisplayRole)
+
+            elif index.column() in [14, 15, 16, 17]:
+                my_icon_wid.setTranslation(stuff)
+
+
+            print('updating icons....')
+            #print(index_top_left.row(), index_top_left.column(), index_bottom_right.row(), index_bottom_right.column())
+
+
+
+
+
+
+
+
+            
 
     # TODO : No idea what this should do.
     def visualRegionForSelection(self, selection):
@@ -55,13 +91,15 @@ class SystemManualView(QtWidgets.QAbstractItemView):
         if hasattr(index.model(), 'mapToSource'):
             index = index.model().mapToSource(index)
 
-        if self._previous_index == index:return
+        if self._previous_index == index:
+            return
 
         model = index.model()
         node  = index.internalPointer()
 
         type_info = None
-        if node is not None: type_info = node.typeInfo()
+        if node is not None:
+            type_info = node.typeInfo()
 
         if type_info == strings.SYSTEM_NODE:
             self._current_system_index = index
@@ -83,6 +121,93 @@ class SystemManualView(QtWidgets.QAbstractItemView):
 
 
 
+    def updateIcons(self):
+
+        for icon_proxy in self._device_icon_proxies:
+
+            transform = QtGui.QTransform()
+            transform.translate( float(icon_node.x) , float(icon_node.y)  )
+            transform.rotate( float(icon_node.rotation) )
+            transform.scale(float(icon_node.scale), float(icon_node.scale) )
+
+            icon_proxy.setTransform( self.iconTransform(icon_node))
+
+
+
+
+
+
+    def iconTransform(self, icon_node):
+        transform = QtGui.QTransform()
+
+        transform.translate( float(icon_node.x) , float(icon_node.y)  )
+        transform.rotate( float(icon_node.rotation) )
+        transform.scale(float(icon_node.scale), float(icon_node.scale) )
+
+        return transform
+
+    def addDeviceIcon(self, icon_index):
+        '''
+          - Must keep each icon inside of the self._scene_box
+          - Do we want to map all these?
+          - Add a mapping to the other things that just calls the same functin to set a icons position?
+        '''
+        icon_node   = icon_index.internalPointer()
+
+        wid = DeviceIconWidget()
+        wid.setIcon(icon_node.svg)
+        wid.setCallback(self.setSelection)
+        wid.setIndex(icon_index.parent())
+
+        self._device_icons.append(wid)
+        proxWid = self.graphics_scene.addWidget(wid)
+        proxWid.setTransform( self.iconTransform(icon_node))
+
+        #x       = float(icon_node.x)
+        #y       = float(icon_node.y)
+        #rot     = float(icon_node.rotation)
+        #scale   = float(icon_node.scale)
+#
+        #bounds   = proxWid.boundingRect()
+        #center_x =  bounds.width() * 0.5
+        #center_y =  bounds.height() * 0.5
+#
+        #transform = QtGui.QTransform()
+#
+        #transform.translate( x , y  )
+        #transform.translate( center_x , center_y  )
+#
+        #transform.rotate( rot )
+        #transform.scale(scale,scale)
+        #transform.translate( -center_x , -center_y )
+
+
+
+
+        #if icon_node.numberNode is not None:
+        #    #TODO: remove this block
+        #    spin = QtWidgets.QLabel('1.23 mTorr')
+        #    #self._data_mappers[-1].addMapping(spin, 12)
+        #    prox_spin = self.graphics_scene.addWidget(spin)
+#
+        #    number_x = x + float(icon_node.numberX)
+        #    number_y = y + float(icon_node.numberY)
+        #    transform = QtGui.QTransform()
+        #    transform.translate( number_x , number_y)
+        #    prox_spin.setTransform( transform )
+
+
+
+        mapper = QtWidgets.QDataWidgetMapper()
+        mapper.setModel(self.model())
+        mapper.addMapping(wid, 11, bytes('layer','ascii'))
+
+        mapper.setRootIndex(icon_index.parent().parent())
+        mapper.setCurrentModelIndex(icon_index.parent())
+
+        self._data_mappers.append(mapper)
+
+
 
     def displaySystem(self, system_index):
         self.graphics_scene.clear()
@@ -92,76 +217,20 @@ class SystemManualView(QtWidgets.QAbstractItemView):
         system_node = system_index.internalPointer()
         svg_image = system_node.backgroundSVG
 
-        extra_margin = 10
-        min_view_dim = min(self.width(), self.height()) - extra_margin
-        scene_box = QtCore.QRectF(0, 0, min_view_dim, min_view_dim)
-
-        self.graphics_view.setSceneRect(scene_box)
-
-        rectangle = QtWidgets.QGraphicsRectItem(scene_box)
+        #Border line around background image
+        rectangle = QtWidgets.QGraphicsRectItem(self._scene_box)
         self.graphics_scene.addItem(rectangle)
+
         background = QtGui.QPixmap(svg_image)
-        background = background.scaled(min_view_dim,min_view_dim,QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        background = background.scaled(self._scene_box.width(), self._scene_box.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
         self.graphics_scene.addPixmap(background)
 
 
-        #self.svgItem = QtSvg.QGraphicsSvgItem(svg_image)
-        #self.svgSize = self.svgItem.renderer().defaultSize()
-        #self.graphics_scene.addItem(self.svgItem)
-        #self.svgItem.setPos(0, 0)
-
-        model = system_index.model()
-        icon_indexes = model.systemIcons(system_index)
+        #Add the Device Icons
+        icon_indexes = self.model().indexesOfType(strings.DEVICE_ICON_NODE, system_index)
 
         for icon_index in icon_indexes:
-            icon_node   = icon_index.internalPointer()
+            self.addDeviceIcon(icon_index)
 
-            icon_wid = DeviceIconWidget(icon_node.svg, self.setSelection, icon_index.parent())
-            proxWid = self.graphics_scene.addWidget(icon_wid)
-
-            self._device_icons.append(icon_wid)
-
-            x       = float(icon_node.x)
-            y       = float(icon_node.y)
-            rot     = float(icon_node.rotation)
-            scale   = float(icon_node.scale)
-            pos     = QtCore.QPointF(x,y)
-
-            bounds   = proxWid.boundingRect()
-            center_x =  bounds.width() * 0.5
-            center_y =  bounds.height() * 0.5
-
-            transform = QtGui.QTransform()
-
-            transform.translate( x , y  )
-            transform.translate( center_x , center_y  )
-
-            transform.rotate( rot )
-            transform.scale(scale,scale)
-            transform.translate( -center_x , -center_y )
-
-            proxWid.setTransform( transform )
-
-
-            self._data_mappers.append(QtWidgets.QDataWidgetMapper())
-            self._data_mappers[-1].setModel(model)
-            self._data_mappers[-1].addMapping(icon_wid, 11, bytes('layer','ascii'))
-
-            if icon_node.numberNode is not None:
-
-
-                #TODO: remove this block
-                spin = QtWidgets.QLabel('1.23 mTorr')
-                #self._data_mappers[-1].addMapping(spin, 12)
-                prox_spin = self.graphics_scene.addWidget(spin)
-
-                number_x = x + float(icon_node.numberX)
-                number_y = y + float(icon_node.numberY)
-                transform = QtGui.QTransform()
-                transform.translate( number_x , number_y)
-                prox_spin.setTransform( transform )
-
-
-
-            self._data_mappers[-1].setRootIndex(icon_index.parent().parent())
-            self._data_mappers[-1].setCurrentModelIndex(icon_index.parent())
+        #Resize the view
+        self.graphics_view.fitInView(self._scene_box, QtCore.Qt.KeepAspectRatio)

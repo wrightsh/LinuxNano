@@ -4,30 +4,51 @@ from linuxnano.strings import strings
 import xml.etree.ElementTree as ET
 
 class DeviceIconWidget(QtWidgets.QWidget):
-    def __init__(self, svg, selection_call=None, index=None):
+    def __init__(self, icon_svg=None):
         super().__init__()
 
-        self._svg = svg
-        self._selection_call = selection_call
-        self._index = index
-        self._layer = ''
-        self._hovering      = False
-        self._selected      = False
+        self._callback = None #This method gets called on click to make the parents tree change index
+        self._index = None #index of the device that owns this icon
 
-        #Set the layer to the first one as default
-        xml = ET.parse(self._svg)
-        svg = xml.getroot()
-        self._layer = svg[0].attrib['id']
+        self._svg = 'linuxnano/resources/icons/general/unknown.svg'
+        self._layer = ''
+        self._hovering = False
+        self._selected = False
+
+        if icon_svg is not None:
+            self.setIcon(icon_svg)
+
+    def setCallback(self, value):
+        self._callback = value
+
+    def setIndex(self, value):
+        self._index = value
+
+    def setIcon(self, value):
+        try:
+            self._svg = value
+
+            xml = ET.parse(self._svg)
+            svg = xml.getroot()
+            self._layer = svg[0].attrib['id']
+        except:
+            self._svg = 'linuxnano/resources/icons/general/unknown.svg'
+            xml = ET.parse(self._svg)
+            svg = xml.getroot()
+            self._layer = svg[0].attrib['id']
+
+            raise ValueError("Invalid SVG")
+
 
     def paintEvent(self, event):
         painter  = QtGui.QPainter(self)
-        painter.begin(self)
+        #painter.begin(self)
         renderer = QtSvg.QSvgRenderer(self._svg)
         bounding_rect = renderer.boundsOnElement(self._layer)
 
         #painter.fillRect(event.rect(), QtGui.QBrush(QtCore.Qt.blue))
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.setGeometry(0,0,bounding_rect.width(), bounding_rect.height())
+        self.setGeometry(0, 0, bounding_rect.width(), bounding_rect.height())
         renderer.render(painter, self._layer, bounding_rect)
 
         if self._hovering:
@@ -38,15 +59,14 @@ class DeviceIconWidget(QtWidgets.QWidget):
             painter.setPen(QtGui.QPen(QtGui.QBrush(QtCore.Qt.cyan), 4, QtCore.Qt.SolidLine))
             painter.drawRect(bounding_rect)
 
-        painter.end()
+        #painter.end()
         event.accept()
 
     def mouseDoubleClickEvent(self, event):
         event.accept()
 
     def mouseReleaseEvent(self, event):
-        self.setSelected()
-        self._selection_call(self._index)
+        self._callback(self._index)
         event.accept()
 
     def mousePressEvent(self, event):
@@ -54,7 +74,7 @@ class DeviceIconWidget(QtWidgets.QWidget):
 
     def setSelected(self):
         self._selected = True
-        self.update()#self.repaint()
+        self.update()
 
     def clearSelected(self):
         self._selected = False
@@ -62,18 +82,26 @@ class DeviceIconWidget(QtWidgets.QWidget):
 
     def enterEvent(self, event):
         self._hovering = True
-        self.update()#self.repaint()
+        self.update()
         event.accept()
 
     def leaveEvent(self, event):
         self._hovering = False
-        self.update()#self.repaint()
+        self.update()
         event.accept()
 
-    def getLayer(self):
+    @QtCore.pyqtProperty(str)
+    def layer(self):
         return self._layer
 
-    def setLayer(self, new_layer):
+    @layer.setter
+    def layer(self, new_layer):
         self._layer = new_layer
         self.repaint()
-    layer = QtCore.pyqtProperty('QString',fget=getLayer, fset=setLayer)
+
+    #def getLayer(self):
+    #    return self._layer
+    #def setLayer(self, new_layer):
+    #    self._layer = new_layer
+    #    self.repaint()
+    #layer = QtCore.pyqtProperty('QString',fget=getLayer, fset=setLayer)
