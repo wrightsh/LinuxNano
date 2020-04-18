@@ -22,7 +22,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.reader = HalReader()
 
-        tree = ET.parse('tests/tools/tool_model_2.xml')
+        tree = ET.parse('tests/tools/tool_model_1.xml')
         self.tool_model = ToolModel()
         self.tool_model.loadTool(tree)
 

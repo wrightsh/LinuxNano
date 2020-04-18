@@ -63,6 +63,9 @@ class DeviceStateTableModel(QtCore.QAbstractTableModel):
         return len(self._data[0])
 
 
+    def iconLayerFromState(self, state):
+        return self._data[state][self.iconLayerColumn()]
+
     #TODO I think this being called too often during load
     def setNodeStates(self, list_of_states):
         err = "List of states must be in form [ ('io_name_1', ['state_1', 'state_2']), ('io_name_2', ['state_1','state_2']) ]"

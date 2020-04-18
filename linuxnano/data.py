@@ -90,6 +90,7 @@ class Node(object):
 
 
     def asXml(self):
+        #TODO Change this to pythons xml library
         doc = QtXml.QDomDocument()
 
         node = doc.createElement(self.typeInfo())
@@ -302,20 +303,8 @@ class DeviceNode(Node):
         self._device_state_table_model = DeviceStateTableModel()
         self._state = 0
 
-        self._icon_layer = ''
-        self._icon_value = '1.0'
-
-        # should this exist?
-        #self._io_bits = 0
-        #self._io_names  = []
-        #self._io_states = []
-        #self._manual_queue            = Queue.Queue()
-
     def typeInfo(self):
         return strings.DEVICE_NODE
-
-    def iconResource(self):
-        return strings.TREE_ICON_DEVICE_NODE
 
     def addChild(self, child):
         super().addChild(child)
@@ -333,7 +322,8 @@ class DeviceNode(Node):
         return self._device_state_table_model
 
     def stateFromChildren(self):
-        '''This returns the current state of the device, first reads all child nodes then lookups state in DeviceStateTable '''
+        #returns the current state of the device
+        #first reads all child nodes then lookups state in DeviceStateTable
         state = 0
         bit_weight = 1
 
@@ -344,6 +334,9 @@ class DeviceNode(Node):
 
         return state
 
+    def iconLayer(self):
+        #this returns the current icon layer
+        return self.deviceStateTableModel().iconLayerFromState(self._state)
 
     def halNodeChanged(self):
         states = []
@@ -361,9 +354,6 @@ class DeviceNode(Node):
 
         if   column is 10: r =  self._device_state_table_model
         elif column is 11: r =  self.status
-
-        elif column is 12: r =  self._icon_layer #Will want to transmit the name for mapping this for manual icon view
-        elif column is 13: r =  self._icon_value
         elif column is 16: r =  self._state
         return r
 
@@ -372,9 +362,6 @@ class DeviceNode(Node):
 
         if   column is 10: pass
         elif column is 11: self.status = str(value)
-
-        elif column is 12: self._icon_layer = str(value)
-        elif column is 15: pass
         elif column is 16: self._state = int(value)
 
 
@@ -385,8 +372,8 @@ class DeviceNode(Node):
         return
 
 
-    #TODO
     def status(self):
+        #TODO
         return 'TODO Data DeviceNode status'
 
     def deviceStates():
@@ -403,106 +390,6 @@ class DeviceNode(Node):
         return locals()
     deviceStates = property(**deviceStates())
 
-    def iconNode(self):
-        for i, child in enumerate(self.children()):
-            if child.typeInfo() == strings.DEVICE_ICON_NODE:
-                return child
-
-
-
-
-    ##########################################################
-    ##########################################################
-    #def updateIconLayer(self):
-    #    self._icon_object.setLayer(self.iconLayer())
-    #def updateIconHoverLayer(self):
-    #    self._icon_object.setHoverLayer(self.iconHoverLayer())
-
-    #def iconLayer(self):
-    #    row = self._combination_table_model.dataForRow(self._current_state_id)
-    #    return row[1]
-
-    #def iconHoverLayer(self):
-    #    row = self._combination_table_model.dataForRow(self._current_state_id)
-    #    return row[2]
-
-    ##########################################################
-    ##########################################################
-
-
-    #def setState(self):
-
-    #    setting = self.manualStateOutputs()
-
-    #    if setting is not None:
-    #
-    #        for i, tmp in enumerate(setting):
-    #
-    #            if tmp['manualSetting'] is not None:
-
-    #                    nodes = self.children()
-    #
-    #                    for i, node in enumerate(nodes):
-
-    #                        if node.name() == tmp['groupName'] and node.typeInfo() == strings.DIGITAL_OUTPUT_NODE:
-    #                            print('Setting on ', str(node.name()))
-    #                            node.setOutputFromState(tmp['manualSetting'])
-    #
-
-
-    #    self.setManualStateOutputs(None)
-
-
-
-    #def updateState(self):
-    #    ''' The system controller calls this in order to update the
-    #        devices current state '''
-    #
-    #    row = 0
-    #    count = self.childCount()
-    #    lengths = self.childLengths()
-
-    #    for i, node in enumerate(self.ioChildren()):
-    #
-    #        # Find the factor to multiply the nodes state by for the proper row
-    #        if ( (i+1) < len(lengths)) :
-    #            factor = reduce(operator.mul, lengths[i+1:])
-    #
-    #        else:
-    #            factor = 1
-
-
-    #        row += factor * node.currentIndex()
-    #
-    #
-
-    #    # Only update the state if it changed
-    #    if self._current_state_id is not row:
-    #
-    #        data = self.combinationTableModel().dataForRow(row)
-    #
-    #
-    #
-    #        #print self.name() + " - " + str(row) + " : " + str(data)
-    #
-    #
-    #        #Log state change
-    #        print "State Changed: " + str(row)
-    #        self._current_state_id = row
-
-    #        #Update gui icons
-
-    #        try:
-    #            self.updateIconLayer()
-    #            self.updateIconHoverLayer()
-    #        except:
-    #            print "Failed to update part of the gui"
-    #
-    #
-    #        self._status = data[0]
-
-
-
 
 
 class DeviceIconNode(Node):
@@ -515,9 +402,8 @@ class DeviceIconNode(Node):
         self._rotation = 0.0
         self._scale    = 1.0
 
-        self._svg = 'resources/icons/general/unknown.svg'
-
         self._layer = ''
+        self._layers = []
         self._number_node  = 'None'
 
         self._number_x             = 0
@@ -528,14 +414,10 @@ class DeviceIconNode(Node):
         self._number_max_font_size = 72
 
 
-        #Data should not own view widgets...        self._icon_object = SVGWidget()
-
-        #self._numeric_icon_object = None
+        self.svg = 'linuxnano/resources/icons/general/unknown.svg'
         #not sure what type of data this should store XXX
-        #temp_string_list = ('None','1','2')
         #self._number_node_list_model = QtCore.QStringListModel(temp_string_list)
 
-        # We also need to know what index to use for the number if there is one.
         # Does this reference the id that the node owns or the QModelIndex
         #self._icon_number_node_index = None  #QModelIndex of the node that we get the # from, calculated at runtime
         #self._icon_number_node_id = 0  # ID of the node that we pull the number from
@@ -550,9 +432,7 @@ class DeviceIconNode(Node):
         r = super().data(column)
 
         if   column is 10: r = self.svg
-        elif column is 11:
-            print("JUST CALL THIS")
-            r = str('fault')#self._layer #Will want to transmit the name for mapping this for manual icon view
+        elif column is 11: r = self.layer()
         elif column is 14: r = self.x
         elif column is 15: r = self.y
         elif column is 16: r = self.scale
@@ -575,9 +455,7 @@ class DeviceIconNode(Node):
         super().setData(column, value)
 
         if   column is 10: self.svg                 = value
-        elif column is 11:
-            if value in self.layers().names:
-                self._layer = str(value)
+        elif column is 11: self._layer              = value
         elif column is 14: self.x                   = value
         elif column is 15: self.y                   = value
         elif column is 16: self.scale               = value
@@ -598,52 +476,42 @@ class DeviceIconNode(Node):
 
         return enum(node_names)
 
+    def layer(self):
+        if self._layer in self.layers().names:
+            return self._layer
+        else:
+            return self.layers().names[0]
+
     def layers(self):
-        try:
-            xml = ET.parse(self.svg)
-            svg = xml.getroot()
-
-            layers = []
-
-            for child in svg:
-                layers.append(child.attrib['id'])
-
-            return enum(layers)
-        except:
-            return enum([])
+        '''Returns enum of layers for a dropdown list in the deviceStateTableModel'''
+        return enum(self._layers)
 
 
-    '''Cant use this format without it being a property / saved '''
-    #def layer():
-    #    def fget(self):
-    #        print("layer fget:", self._layer)
-    #        return self._layer
-
-    #    def fset(self, value):
-    #        print("layer fset:", value)
-
-    #        if value in self.layers().names:
-    #            self._layer = str(value)
-    #        else:
-    #            self._layer = ''
-    #    return locals()
-    #layer = property(**layer())
-
-
-
+    #All of these properties get saved
     def svg():
         def fget(self):
             return self._svg
 
         def fset(self, value):
-            if os.path.isfile(value):
+            try:
                 self._svg = value
-                #self._icon_object.setIconFile(self._icon_svg)
-                #self.updateIconPosition()
+                self._layers = []
+                xml = ET.parse(self._svg)
+                svg = xml.getroot()
+
+                for child in svg:
+                    self._layers.append(child.attrib['id'])
+
+            except:
+                self._svg = 'linuxnano/resources/icons/general/unknown.svg'
+                xml = ET.parse(self._svg)
+                svg = xml.getroot()
+
+                for child in svg:
+                    self._layers.append(child.attrib['id'])
 
         return locals()
     svg = property(**svg())
-
 
     def x():
         def fget(self): return self._x
@@ -715,40 +583,6 @@ class DeviceIconNode(Node):
                 self._number_node = 'None'
         return locals()
     numberNode = property(**numberNode())
-
-
-
-
-
-            #self._icon_object.setLayer(self._icon_layer)
-        #return locals()
-    #This is from the device state not a saved item iconLayer = property(**iconLayer())
-
-
-#####################
-    #def numberDisplayNodeListModel(self):
-    #    return ({'list_model':self._number_node_list_model, 'current_id':self._icon_number_node_id},)
-
-    #def setNumberDisplayNodeListModel(self, val):
-    #    val = val[0]
-    #
-    #    model      = val['list_model']
-    #    current_id = val['current_id']
-
-    #    self._icon_number_node_id = current_id
-#####################
-
-
-
-    #def iconObject(self):
-    #    return self._icon_object
-    # Optional number next to the icon
-    #def updateIconPosition(self):
-    #    try:
-    #        self._icon_object.updatePosition(self._icon_x,self._icon_y,self._icon_rotation, self._icon_scale)
-    #    except:
-    #        pass
-
 
 
 

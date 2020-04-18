@@ -206,11 +206,12 @@ class ToolModel(QtCore.QAbstractItemModel):
             return node.data(index.column())
 
 
-        #TODO Fix this! and and testing
+        #TODO Get rid of the tree decoration
         elif role == QtCore.Qt.DecorationRole:
             if index.column() == 0:
-                resource = node.iconResource()
-                return QtGui.QIcon(QtGui.QPixmap(resource))
+                return None
+                #resource = node.iconResource()
+                #return QtGui.QIcon(QtGui.QPixmap(resource))
 
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
