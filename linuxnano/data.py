@@ -301,6 +301,7 @@ class DeviceNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._device_state_table_model = DeviceStateTableModel()
+        self._status = ''
         self._state = 0
 
     def typeInfo(self):
@@ -338,6 +339,10 @@ class DeviceNode(Node):
         #this returns the current icon layer
         return self.deviceStateTableModel().iconLayerFromState(self._state)
 
+    def status(self):
+        #this returns the current icon layer
+        return self.deviceStateTableModel().statusFromState(self._state)
+
     def halNodeChanged(self):
         states = []
 
@@ -353,7 +358,7 @@ class DeviceNode(Node):
         r = super().data(column)
 
         if   column is 10: r =  self._device_state_table_model
-        elif column is 11: r =  self.status
+        elif column is 11: r =  self._status
         elif column is 16: r =  self._state
         return r
 
@@ -361,7 +366,7 @@ class DeviceNode(Node):
         super().setData(column, value)
 
         if   column is 10: pass
-        elif column is 11: self.status = str(value)
+        elif column is 11: self._status = str(value)
         elif column is 16: self._state = int(value)
 
 
@@ -371,10 +376,6 @@ class DeviceNode(Node):
                 return child.layers()
         return
 
-
-    def status(self):
-        #TODO
-        return 'TODO Data DeviceNode status'
 
     def deviceStates():
         def fget(self):

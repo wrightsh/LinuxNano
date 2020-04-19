@@ -67,7 +67,7 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
         self._mapper.setModel(model)
         self._mapper.addMapping(self.ui_name,              0, bytes("text",'ascii'))
         self._mapper.addMapping(self.ui_description,       2, bytes("text",'ascii'))
-        self._mapper.addMapping(self.ui_status,           10, bytes("text",'ascii'))
+        self._mapper.addMapping(self.ui_status,           11, bytes("text",'ascii'))
 
     def model(self):
         return self._model

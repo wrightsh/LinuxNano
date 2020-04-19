@@ -261,6 +261,8 @@ class HalReader():
 
             if device_state != tool_model.data(index.siblingAtColumn(16), QtCore.Qt.DisplayRole):
                 self._tool_model.setData(index.siblingAtColumn(16), device_state)
+                device_status = index.internalPointer().status()
+                self._tool_model.setData(index.siblingAtColumn(11), device_status)
                 print("Device State: ", device_state)
 
 
