@@ -251,6 +251,7 @@ class HalReader():
         self.writeStreamer()
 
 
+        #set all the device states
         tool_model = self.model()
         tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
         indexes = tool_model.indexesOfType(strings.DEVICE_NODE, tool_index)
@@ -258,9 +259,19 @@ class HalReader():
         for index in indexes:
             device_state = index.internalPointer().stateFromChildren()
 
-            if device_state != self._tool_model.data(index.siblingAtColumn(16), QtCore.Qt.DisplayRole):
+            if device_state != tool_model.data(index.siblingAtColumn(16), QtCore.Qt.DisplayRole):
                 self._tool_model.setData(index.siblingAtColumn(16), device_state)
                 print("Device State: ", device_state)
+
+
+
+        #set all the device icon layers
+        indexes = tool_model.indexesOfType(strings.DEVICE_ICON_NODE, tool_index)
+        for index in indexes:
+            icon_layer = index.parent().internalPointer().iconLayer()
+
+            if icon_layer != index.internalPointer().layer():
+                tool_model.setData(index.siblingAtColumn(11), icon_layer)
 
 
 

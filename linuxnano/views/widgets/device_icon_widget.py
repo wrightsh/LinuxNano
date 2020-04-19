@@ -3,77 +3,62 @@ from PyQt5 import QtGui, QtCore, QtSvg, QtWidgets
 from linuxnano.strings import strings
 import xml.etree.ElementTree as ET
 
-class DeviceIconWidget(QtWidgets.QWidget):
-    def __init__(self, svg, selection_call=None, index=None):
+
+
+class DeviceIconWidget(QtSvg.QGraphicsSvgItem):
+    def __init__(self, renderer):
         super().__init__()
 
-        self._svg = svg
-        self._selection_call = selection_call
-        self._index = index
-        self._layer = ''
-        self._hovering      = False
-        self._selected      = False
+        self.setSharedRenderer(renderer)
+        self.setAcceptHoverEvents(True)
+        #self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
 
-        #Set the layer to the first one as default
-        xml = ET.parse(self._svg)
-        svg = xml.getroot()
-        self._layer = svg[0].attrib['id']
+        self._callback = None #This method gets called on click to make the parents tree change index
+        self._index = None #index of the device that owns this icon
 
-    def paintEvent(self, event):
-        painter  = QtGui.QPainter(self)
-        painter.begin(self)
-        renderer = QtSvg.QSvgRenderer(self._svg)
-        bounding_rect = renderer.boundsOnElement(self._layer)
+        self._hovering = False
+        self._selected = False
 
-        #painter.fillRect(event.rect(), QtGui.QBrush(QtCore.Qt.blue))
+    def setCallback(self, value):
+        self._callback = value
+
+    def setIndex(self, value):
+        self._index = value
+
+    def paint(self, painter, option, wid):
+        super().paint(painter, option, wid)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.setGeometry(0,0,bounding_rect.width(), bounding_rect.height())
-        renderer.render(painter, self._layer, bounding_rect)
 
         if self._hovering:
             painter.setPen(QtGui.QPen(QtGui.QBrush(QtCore.Qt.cyan), 4, QtCore.Qt.DotLine))
-            painter.drawRect(bounding_rect)
+            painter.drawRect(self.boundingRect())
 
         if self._selected:
             painter.setPen(QtGui.QPen(QtGui.QBrush(QtCore.Qt.cyan), 4, QtCore.Qt.SolidLine))
-            painter.drawRect(bounding_rect)
-
-        painter.end()
-        event.accept()
-
-    def mouseDoubleClickEvent(self, event):
-        event.accept()
+            painter.drawRect(self.boundingRect())
 
     def mouseReleaseEvent(self, event):
-        self.setSelected()
-        self._selection_call(self._index)
+        self._callback(self._index)
         event.accept()
 
+    #mouseReleaseEvent needs this
     def mousePressEvent(self, event):
         event.accept()
 
     def setSelected(self):
         self._selected = True
-        self.update()#self.repaint()
+        self.update()
 
     def clearSelected(self):
         self._selected = False
-        self.repaint()
+        self.update()
 
-    def enterEvent(self, event):
+    def hoverEnterEvent(self, event):
         self._hovering = True
-        self.update()#self.repaint()
+        self.update()
         event.accept()
 
-    def leaveEvent(self, event):
+    def hoverLeaveEvent(self, event):
         self._hovering = False
-        self.update()#self.repaint()
+        self.update()
         event.accept()
-
-    def getLayer(self):
-        return self._layer
-
-    def setLayer(self, new_layer):
-        self._layer = new_layer
-        self.repaint()
-    layer = QtCore.pyqtProperty('QString',fget=getLayer, fset=setLayer)

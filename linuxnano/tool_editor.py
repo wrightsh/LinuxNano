@@ -47,7 +47,6 @@ class ToolEditor(tool_editor_base, tool_editor_form):
             self.ui_specific_box.addWidget(editor)
 
         self.hideEditors()
-        self.ui_tree.setColumnWidth(0,300)
         self.ui_splitter.setSizes([self.width()*0.6, self.width()*0.4])
 
 
@@ -88,7 +87,7 @@ class ToolEditor(tool_editor_base, tool_editor_form):
         self.ui_tree.setModel(self._proxy_model) #maybe not self?)
         self.ui_filter.textChanged.connect(self._proxy_model.setFilterRegExp)
         self.ui_tree.selectionModel().currentChanged.connect(self.setSelection)#self._property_editor.setSelection)
-
+        self.ui_tree.setColumnWidth(0,200)
 
         self._node_editor.setModel(self._proxy_model)
 
