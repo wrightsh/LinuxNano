@@ -1,0 +1,32 @@
+{
+    "type_info": "root",
+    "x_pos": 10,
+    "y_pos": 10,
+    "children": [
+        {
+            "type_info": "Sequence",
+            "x_pos": 80,
+            "y_pos": 201,
+            "children": [
+                {
+                    "children": [],
+                    "type_info": "Set_Output",
+                    "x_pos": 80,
+                    "y_pos": 110
+                },
+                {
+                    "children": [],
+                    "type_info": "Wait_Time",
+                    "x_pos": 80,
+                    "y_pos": 221
+                },
+                {
+                    "children": [],
+                    "type_info": "Set_Output",
+                    "x_pos": 80,
+                    "y_pos": 440
+                }
+            ]
+        }
+    ]
+}

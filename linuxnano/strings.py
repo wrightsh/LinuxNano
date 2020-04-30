@@ -2,6 +2,13 @@
 class strings():
 
 
+    #For behavior tree (bt) editor
+    SEQUENCE_NODE = 'Sequence'
+    SELECTOR_NODE = 'Selector'
+    WHILE_NODE = 'While'
+    SET_OUTPUT_NODE = 'Set_Output'
+    WAIT_TIME_NODE = 'Wait_Time'
+
 
     TOOL_NODE = 'Tool_Node'
     SYSTEM_NODE = 'System_Node'
@@ -42,7 +49,7 @@ class strings():
         enums = dict(zip(enumerated, range(len(enumerated))))
         enums["names"] = enumerated
         return type('enum', (), enums)
-        
+
 
     MANUAL_DISPLAY_TYPES = enum('buttons','combo_box')
     MANUAL_DISPLAY_BUTTONS = 'buttons'
@@ -78,6 +85,3 @@ class strings():
 
 
     EDIT_TAB_ICON       = "/usr/local/LinuxNano/resources/menus/a_out_icon.png"
-
-
-
