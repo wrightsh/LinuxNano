@@ -1,31 +1,47 @@
 {
     "type_info": "root",
-    "x_pos": 10,
-    "y_pos": 10,
+    "x_pos": 0,
+    "y_pos": 0,
     "children": [
         {
             "type_info": "Sequence",
-            "x_pos": 80,
-            "y_pos": 201,
+            "x_pos": 0,
+            "y_pos": -100,
             "children": [
                 {
                     "children": [],
                     "type_info": "Set_Output",
-                    "x_pos": 80,
-                    "y_pos": 110
+                    "x_pos": -400,
+                    "y_pos": 100
                 },
                 {
                     "children": [],
                     "type_info": "Wait_Time",
-                    "x_pos": 80,
-                    "y_pos": 221
+                    "wait_time": 30.2,
+                    "x_pos": -200,
+                    "y_pos": 100
+                },
+                {
+                    "type_info": "Set_Output",
+                    "x_pos": 0,
+                    "y_pos": 100,
+                    "children": [
+                        {
+                            "type_info": "Set_Output",
+                            "x_pos": 0,
+                            "y_pos": 300,
+                            "children": []
+                        }
+                    ]
                 },
                 {
                     "children": [],
-                    "type_info": "Set_Output",
-                    "x_pos": 80,
-                    "y_pos": 440
+                    "type_info": "Wait_Time",
+                    "wait_time": 30.2,
+                    "x_pos": 200,
+                    "y_pos": 100
                 }
+
             ]
         }
     ]

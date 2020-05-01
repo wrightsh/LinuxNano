@@ -18,7 +18,7 @@ def open_window(qtbot):
     def callback(window):
         widget = window()
         qtbot.addWidget(widget)
-        widget.resize(700,700)
+        widget.resize(900,900)
         widget.show()
         widget.setWindowTitle(widget.__class__.__name__)
         qtbot.wait_for_window_shown(widget)
@@ -47,13 +47,30 @@ def test_one(qtbot, open_window):
         json_data = json.load(f)
 
     bt_model.loadJSON(json_data)
-        #bt_model.loadBehavior()
 
-    #editor.setModel(tool_model)
+
+
+    editor.setModel(bt_model)
     assert editor.isVisible()
 
 
-    print(bt_model.asJSON())
+
+
+    #print(bt_model.asJSON())
+
+    index =  bt_model.index(0, 0, QtCore.QModelIndex())
+
+    #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+    #bt_model.setData(index.siblingAtColumn(1), -100)
+    #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+    #bt_model.setData(index.siblingAtColumn(2), -100)
+
+    print(index.siblingAtColumn(1))
+
+
+
+
+
 
 
     #export_dialog = QtWidgets.QFileDialog()
@@ -76,6 +93,6 @@ def test_one(qtbot, open_window):
         #file.write(bt_model._root_node.asXml())
         #file.close()
 
-    #if TestingFlags.ENABLE_MANUAL_TESTING:
+    if TestingFlags.ENABLE_MANUAL_TESTING:
         #MessageBox("Device Editor Testing")
-    #    qtbot.stopForInteraction()
+        qtbot.stopForInteraction()

@@ -34,6 +34,7 @@ class BTModel(QtCore.QAbstractItemModel):
         for child in json['children']:
             index = self.insertChild(parent_index, child['type_info'])
             index.internalPointer().loadAttrs(child)
+            self._recurseJSON(index, child)
 
 
 
@@ -130,6 +131,21 @@ class BTModel(QtCore.QAbstractItemModel):
 
         if index.isValid() and role == QtCore.Qt.EditRole:
             node = index.internalPointer()
+
+            #if index.column() == 2:
+
+                #print("here")
+                #node.setData(index.column(), value)
+#
+                #index2 = index.siblingAtRow(0)
+                #node2 = index2.internalPointer()
+                #node2.setData(index.column(), value)
+                #self.dataChanged.emit(index, index)
+                #self.dataChanged.emit(index2, index2)
+                #return True
+
+            #else:
+
             node.setData(index.column(), value)
             self.dataChanged.emit(index, index)
             return True

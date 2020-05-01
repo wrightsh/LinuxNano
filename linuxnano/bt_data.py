@@ -18,7 +18,6 @@ class Node:
         if parent is not None:
             parent.addChild(self)
 
-
     def loadAttrs(self, data):
         try:
             #Get all the attributes of the node
@@ -27,11 +26,8 @@ class Node:
                 if key in data:
                     setattr(self, key, data[key])
 
-
         except Exception as e:
             MessageBox("Error setting attribute", e, key, value)
-
-
 
     def convertToDict(self, o):
         data = {"type_info": o.typeInfo(),
@@ -43,11 +39,9 @@ class Node:
 
         return data
 
-
     def asJSON(self):
         data = json.dumps(self, default=self.convertToDict,  sort_keys=True, indent=4)
         return data
-
 
     def attrs(self):
         kv = {}
@@ -56,17 +50,17 @@ class Node:
         for cls in my_classes:
             for k, v in sorted(iter(cls.__dict__.items())):
                 if isinstance(v, property):
-                    #print "Property:", k.rstrip("_"), "\n\tValue:", v.fget(self)
                     kv[k] = v.fget(self)
         return kv
-
-
-
-
 
     def typeInfo(self):
         return 'root'
 
+    def isLeaf(self):
+        return False
+
+    def parent(self):
+        return self._parent
 
     def child(self, row):
         return self._children[row]
@@ -83,7 +77,6 @@ class Node:
         child._parent = self
         return True
 
-
     def children(self):
         return self._children
 
@@ -99,9 +92,6 @@ class Node:
 
         return True
 
-    def parent(self):
-        return self._parent
-
     def row(self):
         if self._parent is not None:
             return self._parent._children.index(self)
@@ -116,6 +106,13 @@ class Node:
         elif column is 1: self.x_pos = value
         elif column is 2: self.y_pos = value
 
+    def width(self):
+        return 120
+
+    def height(self):
+        return 60
+
+    #Properties get saved to JSON
     def x_pos():
         def fget(self): return self._x_pos
         def fset(self, value): self._x_pos = int(value)
@@ -129,8 +126,6 @@ class Node:
     y_pos = property(**y_pos())
 
 
-
-
 class SequenceNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -141,6 +136,8 @@ class SequenceNode(Node):
     def isLeaf(self):
         return False
 
+
+
 class SelectorNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -150,6 +147,7 @@ class SelectorNode(Node):
 
     def isLeaf(self):
         return False
+
 
 class WhileNode(Node):
     def __init__(self, parent=None):
@@ -172,6 +170,7 @@ class SetOutputNode(Node):
     def isLeaf(self):
         return True
 
+
 class WaitTimeNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -193,8 +192,10 @@ class WaitTimeNode(Node):
         super().setData(column, value)
         if   column is 10: self.wait_time = value
 
-    #def wait_time():
-    #    def fget(self): return self._wait_time
-    #    def fset(self, value): self._wait_time = float(value)
-    #    return locals()
-    #wait_time = property(**wait_time())
+
+    #Properties get saved to JSON
+    def wait_time():
+        def fget(self): return self._wait_time
+        def fset(self, value): self._wait_time = float(value)
+        return locals()
+    wait_time = property(**wait_time())
