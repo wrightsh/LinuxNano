@@ -196,6 +196,8 @@ class WaitTimeNode(Node):
     #Properties get saved to JSON
     def wait_time():
         def fget(self): return self._wait_time
-        def fset(self, value): self._wait_time = float(value)
+        def fset(self, value):
+            self._wait_time = float(value)
+            print("Wait Time: ", value)
         return locals()
     wait_time = property(**wait_time())

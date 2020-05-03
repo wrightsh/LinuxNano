@@ -130,6 +130,7 @@ class BTEditor(QtWidgets.QAbstractItemView):
 
 
         self._scene_items = []  #[(index, item),(index2, item2)]
+        self._paths = []
 
         self._from_callback = False
 
@@ -164,15 +165,41 @@ class BTEditor(QtWidgets.QAbstractItemView):
 
 
     def addNodeItem(self, index):
-        item = TestGraphicsItem()
+
+        if index.internalPointer().typeInfo() == strings.WAIT_TIME_NODE:
+            item = WaitTimeTestGraphicsItem(index.internalPointer().typeInfo())
+            item.setIndexWaitTime(index.siblingAtColumn(10))
+        else:
+            item = TestGraphicsItem(index.internalPointer().typeInfo())
+
         item.setIndexXPos(index.siblingAtColumn(1))
         item.setIndexYPos(index.siblingAtColumn(2))
+
+
         item.setCallback(self.setData)
 
         self._scene.addItem(item)
         self._scene_items.append((index, item))
 
         self.updateNodeItem(index)
+
+
+        #Deal with the lines between nodes
+        if index.parent().internalPointer():
+            items = [itemm for itemm in self._scene_items if itemm[0] == index.parent()] # Returns list of all tuples that match
+            parent_item = items[0][1]
+
+
+            new_path = Path(parent_item.centerBottomPos(), item.centerTopPos())
+            self._scene.addItem(new_path)
+
+            item.addLine(new_path, 1)
+            parent_item.addLine(new_path, 0)
+
+
+
+
+
 
 
     def updateNodeItem(self, index):
@@ -188,6 +215,10 @@ class BTEditor(QtWidgets.QAbstractItemView):
 
             #Update the graphics item
             graphics_item.setPos(node.x_pos, node.y_pos )
+            graphics_item.updateLines()
+
+            if node.typeInfo() == strings.WAIT_TIME_NODE:
+                graphics_item.setWaitTime(node.wait_time)
 
         self._from_callback = False
 
@@ -320,13 +351,71 @@ class BTEditor(QtWidgets.QAbstractItemView):
 
 
 
+class Path(QtWidgets.QGraphicsPathItem):
+    def __init__(self, start_pos, end_pos):
+        super().__init__()
+        self._start_pos = start_pos
+        self._end_pos = end_pos
+
+        self.setPen(QtGui.QPen(QtCore.Qt.red, 1.75))
+        self.updateElements()
+
+
+    def startPos(self):
+        return self._start_pos
+
+    def setStartPos(self, pos):
+        self._start_pos = pos
+        self.updateElements()
+
+    def endPos(self):
+        return self._end_pos
+
+    def setEndPos(self, pos):
+        self._end_pos = pos
+        self.updateElements()
+
+
+    def minChildY(self):
+        return self._start_pos.y() + 80
+
+    def updateElements(self):
+        start = self._start_pos
+        end = self._end_pos
+
+        d = 20 #Diameter of chamfer
+        drop = 40 #fixed verticle drop
+
+        path = QtGui.QPainterPath()
+        path.moveTo(start)
+        path.lineTo(start.x(), start.y() + drop)
+        d = min(d, abs(start.x()-end.x()))
+
+        if end.x() > start.x():
+            path.lineTo(end.x()-d, start.y() + drop)
+            path.arcTo(end.x()-d, start.y() + drop, d, d, 90, -90)
+
+        elif end.x() < start.x():
+            path.lineTo(end.x()+d, start.y()+drop)
+            path.arcTo( end.x()  , start.y()+drop, d, d, -270, 90)
+
+        else:
+            path.lineTo(end.x(), start.y() + drop)
+
+        path.lineTo(end)
+        self.setPath(path)
+
+
+
 
 
 
 class TestGraphicsItem(QtWidgets.QGraphicsItem):
-    def __init__(self):
+    def __init__(self, type):
         super().__init__()
         # init our flags
+        self._type = type
+
         self.hovered = False
         self._was_moved = False
         self._last_selected_state = False
@@ -343,6 +432,17 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
         self.initUI()
         self.initTitle()
 
+
+        #if self._type == strings.WAIT_TIME_NODE:
+        #    self._wait_time = 238
+        #    self.initWaitTime()
+
+    def centerTopPos(self):
+        return QtCore.QPoint(self.x() + self.width*0.5, self.y())
+
+    def centerBottomPos(self):
+        return QtCore.QPoint(self.x() + self.width*0.5, self.y() + self.height)
+
     def setCallback(self, value):
         self._callback = value
 
@@ -352,26 +452,26 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
     def setIndexYPos(self, value):
         self._index_y_pos = value
 
+
     def initUI(self):
         """Set up this ``QGraphicsItem``"""
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges)
+
         self.setAcceptHoverEvents(True)
 
-        # init title
-        #self.initTitle()
-        #self.title = self.node.title
 
-        #self.initContent()
 
     def initTitle(self):
-        """Set up the title Graphics representation: font, color, position, etc."""
         self.title_item = QtWidgets.QGraphicsTextItem(self)
         self.title_item.setDefaultTextColor(self._title_color)
-        self.title_item.setFont(self._title_font)
         self.title_item.setPos(self.title_horizontal_padding, 0)
+        self.title_item.setFont(self._title_font)
         self.title_item.setTextWidth(self.width - 2 * self.title_horizontal_padding)
-        self.title_item.setPlainText("SequenceNode")
+        self.title_item.setPlainText(self._type)
+
+
 
     def initSizes(self):
         """Set up internal attributes like `width`, `height`, etc."""
@@ -387,6 +487,7 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
         """Initialize ``QObjects`` like ``QColor``, ``QPen`` and ``QBrush``"""
         self._title_color = QtCore.Qt.white
         self._title_font = QtGui.QFont("Ubuntu", 10)
+        self._title_font2 = QtGui.QFont("Ubuntu", 20)
 
         self._color = QtGui.QColor("#7F000000")
         self._color_selected = QtGui.QColor("#FFFFA637")
@@ -462,6 +563,7 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
         super().mousePressEvent(event)
         self._temp_pos = self.pos()
 
+
     def mouseReleaseEvent(self, event):
         super().mouseReleaseEvent(event)
 
@@ -469,13 +571,67 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
             self._callback(self._index_x_pos, self.x())
             self._callback(self._index_y_pos, self.y())
 
+    def updateLines(self):
+        #Move all the lines
+        for line in self._lines:
+            o, index = line[0], line[1]
 
-            for line in self._lines:
-                if self._is_point_1:
-                    self._line.setLine(self.x(), self.y(), line.line().x2(), line.line().y2())
-                else:
-                    self._line.setLine(line.line().x1(), line.line().x2(), self.x(), self.y())
+            if index == 0:
+                o.setStartPos(self.centerBottomPos())
+            else:
+                o.setEndPos(self.centerTopPos())
+                min_y = o.minChildY()
 
 
-    def addLine(self, line, is_point_1):
-        self._lines.append((line, is_point_1))
+    def itemChange(self, change, value):
+        min_y = -32000
+        
+        if change == QtWidgets.QGraphicsItem.ItemPositionChange:
+            self.updateLines()
+
+            #Prevent it from going above it's parent
+            if value.y() < min_y:
+                return QtCore.QPointF(value.x(), min_y)
+
+        return super().itemChange(change, value)
+
+    def addLine(self, line, pt_index):
+        self._lines.append((line, pt_index))
+
+
+class WaitTimeTestGraphicsItem(TestGraphicsItem):
+    def __init__(self, type):
+        super().__init__(type)
+
+        self._wait_time = 0.0
+        self.initWaitTime()
+
+    def setIndexWaitTime(self, value):
+        self._index_wait_time = value
+
+    def initWaitTime(self):
+        self.wait_time_item = QtWidgets.QGraphicsTextItem(self)
+        self.wait_time_item.setDefaultTextColor(self._title_color)
+        self.wait_time_item.setFont(self._title_font2)
+        self.wait_time_item.setTextWidth(self.width - 2 * self.title_horizontal_padding)
+        self.wait_time_item.setPlainText(str(self._wait_time) + ' sec')
+
+        option = QtGui.QTextOption(QtCore.Qt.AlignCenter)
+        self.wait_time_item.document().setDefaultTextOption(option)
+        self.wait_time_item.setPos(self.title_horizontal_padding, self.height*0.4)
+
+        #self.wait_time_item.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
+
+
+    def mouseDoubleClickEvent(self, event):
+        super().mouseDoubleClickEvent(event)
+
+        num,ok = QtWidgets.QInputDialog.getDouble(None,"Set Time","Wait Time (sec)", self._wait_time, 0, 3600, 1)
+        if ok:
+            print(num)
+            self.setWaitTime(num)
+            self._callback(self._index_wait_time, self._wait_time)
+
+    def setWaitTime(self, value):
+        self._wait_time = value
+        self.wait_time_item.setPlainText(str(self._wait_time) + ' sec')

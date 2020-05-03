@@ -153,14 +153,17 @@ class BTModel(QtCore.QAbstractItemModel):
         return False
 
     def headerData(self, section, orientation, role):
-        if role == QtCore.Qt.DisplayRole and seciton == 0:
+        if role == QtCore.Qt.DisplayRole and section == 0:
             return "Type"
 
+    def supportedDropActions(self):
+        return QtCore.Qt.MoveAction
+        
     def flags(self, index):
         node = index.internalPointer()
-        flag = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-        return flag
+        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | \
+               QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
 
 
     def parent(self, index):
