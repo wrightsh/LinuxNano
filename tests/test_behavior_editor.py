@@ -38,7 +38,7 @@ def tool_model():
 
 def test_one(qtbot, open_window):
     editor = open_window(BTEditor)
-    editor2 = open_window(BTEditor)
+    #editor2 = open_window(BTEditor)
 
 
     bt_model = BTModel()
@@ -50,30 +50,31 @@ def test_one(qtbot, open_window):
     bt_model.loadJSON(json_data)
 
 
-    #tree = open_window(QtWidgets.QTreeView)
-    #tree.setModel(bt_model)
+    tree = open_window(QtWidgets.QTreeView)
+    tree.setModel(bt_model)
 
     editor.setModel(bt_model)
-    editor2.setModel(bt_model)
+    #editor2.setModel(bt_model)
     assert editor.isVisible()
-
-
 
 
     #print(bt_model.asJSON())
 
     index =  bt_model.index(0, 0, QtCore.QModelIndex())
 
+    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+    child_index = bt_model.insertChild(index, strings.WAIT_TIME_NODE)
+    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+    #bt_model.removeRows(child_index.row(), 1, child_index.parent())
+    bt_model.removeRows(0, 1, child_index.parent())
+
     #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
     #bt_model.setData(index.siblingAtColumn(1), -300)
     #qtbot.wait(TestingFlags.TEST_WAIT_LONG)
     #bt_model.setData(index.siblingAtColumn(2), -300)
 
-    print(index.siblingAtColumn(1))
-
-
-
-
+    #print(index.siblingAtColumn(1))
+    #print(bt_model.asJSON())
 
 
 

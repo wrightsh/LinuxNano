@@ -158,7 +158,7 @@ class BTModel(QtCore.QAbstractItemModel):
 
     def supportedDropActions(self):
         return QtCore.Qt.MoveAction
-        
+
     def flags(self, index):
         node = index.internalPointer()
 
@@ -179,6 +179,9 @@ class BTModel(QtCore.QAbstractItemModel):
 
 
     def index(self, row, column, parent_index):
+        if not self.hasIndex(row, column, parent_index):
+            return QtCore.QModelIndex()
+
         if parent_index.isValid():
             parent_node = parent_index.internalPointer()
         else:
