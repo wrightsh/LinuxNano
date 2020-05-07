@@ -55,12 +55,11 @@ class BTModel(QtCore.QAbstractItemModel):
         return 1
 
 
-    def insertChild(self, parent_index, child_type, preferred_row = None):
+    def insertChild(self, parent_index, child_type, insert_row = None):
         parent_node  = parent_index.internalPointer()
 
-        if preferred_row is None:
+        if insert_row is None:
             insert_row = parent_index.internalPointer().childCount()
-
 
         if insert_row is not False:
             self.beginInsertRows(parent_index, insert_row, insert_row)
@@ -131,21 +130,6 @@ class BTModel(QtCore.QAbstractItemModel):
 
         if index.isValid() and role == QtCore.Qt.EditRole:
             node = index.internalPointer()
-
-            #if index.column() == 2:
-
-                #print("here")
-                #node.setData(index.column(), value)
-#
-                #index2 = index.siblingAtRow(0)
-                #node2 = index2.internalPointer()
-                #node2.setData(index.column(), value)
-                #self.dataChanged.emit(index, index)
-                #self.dataChanged.emit(index2, index2)
-                #return True
-
-            #else:
-
             node.setData(index.column(), value)
             self.dataChanged.emit(index, index)
             return True
@@ -179,8 +163,8 @@ class BTModel(QtCore.QAbstractItemModel):
 
 
     def index(self, row, column, parent_index):
-        if not self.hasIndex(row, column, parent_index):
-            return QtCore.QModelIndex()
+        #if not self.hasIndex(row, column, parent_index):
+        #    return QtCore.QModelIndex()
 
         if parent_index.isValid():
             parent_node = parent_index.internalPointer()

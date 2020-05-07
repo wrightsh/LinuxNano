@@ -103,7 +103,7 @@ class Node:
 
     def setData(self, column, value):
         if   column is 0: pass
-        elif column is 1: self.x_pos = value
+        elif column is 1:    self.x_pos = value
         elif column is 2: self.y_pos = value
 
     def width(self):

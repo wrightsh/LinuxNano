@@ -145,8 +145,9 @@ class BTEditor(QtWidgets.QAbstractItemView):
             self._recurseRemove(index)
 
 
-    def setData(self, index, value):
+    def setData(self, p_index, value):
         self._from_callback = True
+        index = self.model().index(p_index.row(), p_index.column(), p_index.parent())
         self.model().setData(index, value)
 
     def graphicItemFromIndex(self, index):
@@ -171,14 +172,17 @@ class BTEditor(QtWidgets.QAbstractItemView):
         else:
             item = TestGraphicsItem(index.internalPointer().typeInfo())
 
-        item.setIndexXPos(index.siblingAtColumn(1))
-        item.setIndexYPos(index.siblingAtColumn(2))
+        item.setIndexXPos(QtCore.QPersistentModelIndex(index.siblingAtColumn(1)))
+        item.setIndexYPos(QtCore.QPersistentModelIndex(index.siblingAtColumn(2)))
 
         item.setCallback(self.setData)
-        item.setDeleteCallback(self.test_remove)
+        item.setDeleteCallback(self.removeGraphicItem)
+        item.setAddCallback(self.addGraphicItem)
 
         self._scene.addItem(item)
-        self._scene_items.append((QtCore.QPersistentModelIndex(index), item))
+        p_index = QtCore.QPersistentModelIndex(index)
+        #self._scene_items.append((QtCore.QPersistentModelIndex(index), item))
+        self._scene_items.append((p_index, item))
 
         self.updateNodeItem(index)
 
@@ -236,9 +240,11 @@ class BTEditor(QtWidgets.QAbstractItemView):
 
 
     def dataChanged(self, index_top_left, index_bottom_right, roles):
+        #QAbstractItemModel calls this
         self.updateNodeItem(index_top_left)
 
     def rowsInserted(self, parent_index, start, end):
+        #QAbstractItemModel calls this
         print("rowsInserted")
         for row in range(start, end+1):
             index = parent_index.child(row, 0)
@@ -246,6 +252,7 @@ class BTEditor(QtWidgets.QAbstractItemView):
 
 
     def rowsAboutToBeRemoved(self, parent_index, start, end):
+        #QAbstractItemModel calls this
         print("rowsAboutToBeRemoved: ", start, end)
         for row in range(start, end+1):
             index = parent_index.child(row, 0)
@@ -253,9 +260,23 @@ class BTEditor(QtWidgets.QAbstractItemView):
             self._recurseRemove(index)
 
 
-    def test_remove(self, g_item):
+    def removeGraphicItem(self, g_item):
+        #Called from the scene to remove a node from the model
         index = self.indexFromGraphicItem(g_item)
         self.model().removeRows(index.row(), 1, index.parent())
+
+    def addGraphicItem(self, g_item, pos, g_item_type):
+        #Called from the scene to insert a node into the model
+
+        p_index = self.indexFromGraphicItem(g_item)
+        index = self.model().index(p_index.row(), p_index.column(), p_index.parent())
+
+        new_index = self.model().insertChild(index, strings.WAIT_TIME_NODE, 0)
+
+        x, y = pos.x(), pos.y()
+        self.model().setData(new_index.siblingAtColumn(1), x)
+        self.model().setData(new_index.siblingAtColumn(2), y)
+
 
     # TODO : We have to have these methods but aren't currently doing anything with them
     def visualRegionForSelection(self, selection):
@@ -406,6 +427,9 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
     def setDeleteCallback(self, value):
         self._delete_callback = value
 
+    def setAddCallback(self, value):
+        self._add_callback = value
+
     def setCallback(self, value):
         self._callback = value
 
@@ -510,8 +534,6 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
             painter.drawPath(path_outline.simplified())
 
 
-    #def x_pos(self):
-    #    self.x()
 
 
     def hoverEnterEvent(self, event):
@@ -537,6 +559,10 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
         if self._tmp_line:
             self.scene().removeItem(self._tmp_line)
             self._tmp_line= None
+
+            pos = self.mapToScene(event.pos())
+            pos += QtCore.QPointF(-self.width/2, 0)
+            self._add_callback(self, pos, strings.WAIT_TIME_NODE)
 
 
         if self.pos() != self._temp_pos:
@@ -574,8 +600,6 @@ class TestGraphicsItem(QtWidgets.QGraphicsItem):
             #Prevent it from going above it's parent
             if value.y() < min_y:
                 return QtCore.QPointF(value.x(), min_y)
-
-
 
 
         return super().itemChange(change, value)
