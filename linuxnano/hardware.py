@@ -13,6 +13,8 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from linuxnano.strings import strings
 from linuxnano.data import HalNode, DigitalInputNode, DigitalOutputNode #, AnalogInputNode, AnalogOutputNode
 
+import ctypes
+#use ctypes.c_ulong, c_long and c_float
 
 class HalReader():
     def __init__(self):
@@ -33,7 +35,6 @@ class HalReader():
 
     def model(self):
         return self._tool_model
-
 
     def start(self):
         self._previous_stream = []
@@ -99,31 +100,40 @@ class HalReader():
         pins.pop(0) # "Component Pins:""
         pins.pop(-1) # Empty line
 
-        d_in_pins = ['None']
-        d_out_pins = ['None']
+
+
+        #If we don't lose the reference to the initial list then everything will update correctly
+        #del DigitalOutputNode.hal_pins[1:]
+        #del DigitalInputNode.hal_pins[1:]
+        del HalNode.hal_pins[]
 
         for pin in pins:
             line = pin.decode('utf-8')
             items = line.split()
 
-            if items[1] == 'bit' and items[2] == 'IN':
-                d_out_pins.append(items[4])
+            if items[1] in ['bit']: #, 'S32', 'U32', 'FLOAT']:
+                pin = (items[4], items[1], items[2]) #(name, bit, IN)
+                HalNode.hal_pins.append(pin)
+            #if items[1] == 'bit' and items[2] == 'IN':
+                #DigitalOutputNode.hal_pins.append(items[4])
 
-            if items[1] == 'bit' and items[2] == 'OUT':
-                d_in_pins.append(items[4])
-
-        DigitalInputNode.hal_pins = d_in_pins
-        DigitalOutputNode.hal_pins = d_out_pins
+            #if items[1] == 'bit' and items[2] == 'OUT':
+                #DigitalInputNode.hal_pins.append(items[4])
 
 
-    def samplerHalPins(self):
-        return DigitalInputNode.hal_pins + DigitalOutputNode.hal_pins
+    ''' Remove? '''
+    #def samplerHalPins(self):
+    #    return HalNode.hal_pins
+    #    #return DigitalInputNode.hal_pins + DigitalOutputNode.hal_pins
 
     def samplerIndexes(self):
         tool_model = self.model()
         tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
         indexes = tool_model.indexesOfType(strings.D_IN_NODE, tool_index)
         indexes += tool_model.indexesOfType(strings.D_OUT_NODE, tool_index)
+        #indexes += tool_model.indexesOfType(strings.A_IN_NODE, tool_index)
+        #indexes += tool_model.indexesOfType(strings.A_OUT_NODE, tool_index)
+        #indexes += tool_model.indexesOfType(strings.A_FEEDBACK_NODE, tool_index)
 
         return indexes
 
@@ -132,23 +142,158 @@ class HalReader():
         tool_model = self.model()
         tool_index = tool_model.index(0, 0, QtCore.QModelIndex())
         indexes = tool_model.indexesOfType(strings.D_OUT_NODE, tool_index)
+        #indexes += tool_model.indexesOfType(strings.A_OUT_NODE, tool_index)
+        #indexes += tool_model.indexesOfType(strings.A_FEEDBACK_NODE, tool_index)
 
         return indexes
 
 
 
+    def dInPins(self):
+        all_pins = HalNode.hal_pins #list of (name, type, dir)
+        sub_pins = [item for item in all_pins if item[1] == 'bit']
+        pins = [item for item in sub_pins if item[2] == 'OUT']
+        return pins
+
+    def dOutPins(self):
+        all_pins = HalNode.hal_pins #list of (name, type, dir)
+        sub_pins = [item for item in all_pins if item[1] == 'bit']
+        pins = [item for item in sub_pins if item[2] == 'IN']
+        return pins
+
+    def aInPins(self):
+        all_pins = HalNode.hal_pins #list of (name, type, dir)
+        sub_pins = [item for item in all_pins if item[1] in ['S32','U32','FLOAT']]
+        pins = [item for item in sub_pins if item[2] == 'OUT']
+        return pins
+
+    def aOutPins(self):
+        all_pins = HalNode.hal_pins #list of (name, type, dir)
+        sub_pins = [item for item in all_pins if item[1] in ['S32','U32','FLOAT']]
+        pins = [item for item in sub_pins if item[2] == 'IN']
+        return pins
 
 
+    def pinTypeToChar(self, pin_type):
+        if pin_type == 'bit':
+            return 'b'
+        elif pin_type == 'S32':
+            return 's'
+        elif pin_type == 'U32':
+            return 'u'
+        elif pin_type == 'FLOAT':
+            return 'f'
+
+
+
+    def pinNameToType(self, pin_name):
+        #TODO add check on pin_name
+        all_pins = HalNode.hal_pins #list of (name, type, dir)
+
+        pin_info = [item for item in all_pins if item[0] == pin_name]
+        pin_type = pin_info[0][1]
+
+        if pin_type == 'bit':
+            return 'b'
+        elif pin_type == 'S32':
+            return 's'
+        elif pin_type == 'U32':
+            return 'u'
+        elif pin_type == 'FLOAT':
+            return 'f'
 
 
     def loadSampler(self):
         cfg = 'cfg='
-        connected_pins = []
+        self.connected_sampler_pins = [] #Maybe?--> [('pin_name', index1, index2, index...), (), ()...]
 
         #Each halpin is only loaded once
         for index in self.samplerIndexes():
-            for hal_pin in index.internalPointer().halPins:
-                if hal_pin in self.samplerHalPins() and hal_pin is not None:
+            node = index.internalPointer()
+            if node.typeInfo() == strings.D_IN_NODE:
+                for pin in node.halPins:
+                    if pin in self.dInPins and pin not in connected_pins:
+                        cfg += 'b'
+                        self.connected_sampler_pins.append(pin)
+
+            elif node.typeInfo() == strings.D_OUT_NODE:
+                for pin in node.halPins:
+                    if pin in self.dOutPins and pin not in connected_pins:
+                        cfg += 'b'
+                        self.connected_sampler_pins.append(pin)
+
+            elif node.typeInfo() == strings.A_IN_NODE:
+                for pin in node.halPins:
+                    if pin in self.aInPins and pin not in connected_pins:
+                        cfg += self.pinNameToType(pin)
+                        self.connected_sampler_pins.append(pin)
+
+            elif node.typeInfo() == strings.A_OUT_NODE:
+                for pin in node.halPins:
+                    if pin in self.aOutPins and pin not in connected_pins:
+                        cfg += self.pinNameToType(pin)
+                        self.connected_sampler_pins.append(pin)
+
+
+# really the problem is defining states for analog nodes
+# example.  temp setpoint and 2 thermcouples.  can have large delta between set and thermcouple for a while, but even
+# a small difference between thermcouples should alarm as that  means a TC broke
+
+
+
+        subprocess.call(['halcmd', 'loadrt', 'sampler', 'depth=100', cfg])
+        print("\nSampler CFG is: ", cfg)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        ''' ------------------------'''
+        cfg = 'cfg='
+
+        pins_to_connect = []
+        for index in self.samplerIndexes():
+            pins_to_connect.append(index.internalPointer().samplerPins())
+
+
+
+        for pin_name, dir, type in HalNode.hal_pins:
+            if dir == 'OUT' and pin_name in pins_to_connect:
+                if type == 'bit':
+                    cfg += 'b'
+                #elif type == 'S32':
+                #    cfg += 'b'
+                #elif type == 'U32':
+                #    cfg += 'b'
+                #elif type == 'FLOAT':
+                #    cfg += 'b'
+
+
+
+        connected_pins = []
+        #Each halpin is only loaded once
+        for index in self.samplerIndexes():
+            node = index.internalPointer()
+
+            for hal_pin in node.samplerPins():
+                #ugh this isn't even right now
+                if hal_pin in HalNode.hal_pins and hal_pin is not None:
                     if hal_pin not in connected_pins:
                         cfg += 'b'
                     connected_pins.append(hal_pin)
@@ -157,6 +302,44 @@ class HalReader():
         print("\nSampler CFG is: ", cfg)
 
 
+    def connectSamplerSignals(self):
+        sampler_pin = 0
+        connected_pins = [] #['pin_a','pin_b'], ordered by how its connected to the sampler
+
+        for index in self.samplerIndexes():
+            node = index.internalPointer()
+            signal_names = node.samplerSignals()
+            node_sampler_pins = []
+
+            for i, hal_pin in enumerate(node.samplerPins()):
+                if hal_pin in HalNode.hal_pins and hal_pin is not None:  #TODO this doesn't check if the pin is the right type
+                    if hal_pin not in connected_pins:
+                        subprocess.call(['halcmd', 'net', signal_names[i], hal_pin, '=>','sampler.0.pin.'+str(sampler_pin)])
+                        print(         '\nhalcmd', 'net', signal_names[i], hal_pin, '=>','sampler.0.pin.'+str(sampler_pin))
+
+                        connected_pins.append(hal_pin)
+                        node_sampler_pins.append(sampler_pin)
+                        sampler_pin += 1
+
+                    else:
+                        node_sampler_pins.append(connected_pins.index(hal_pin))
+
+            node.setSamplerPins(node_sampler_pins) # This is a list of indexes
+
+
+        subprocess.call(['halcmd', 'setp', 'sampler.0.enable', 'True'])
+        subprocess.call(['halcmd', 'addf', 'sampler.0', 'gui'])
+
+
+        # Sampler userspace component, stdbuf fixes bufering issue
+        self.p_sampler = subprocess.Popen(['stdbuf', '-oL', 'halcmd', 'loadusr', 'halsampler', '-c', '0', '-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+
+        t = Thread(target=self.enqueue_sampler, args=(self.p_sampler.stdout, self.sampler_queue))
+        t.daemon = True
+        t.start()
+
+
+    ''' FIX '''
     def loadStreamer(self):
         cfg = 'cfg='
         connected_pins = []
@@ -172,42 +355,6 @@ class HalReader():
 
         subprocess.call(['halcmd', 'loadrt', 'streamer', 'depth=100', cfg])
         print("\nStreamer CFG is: ", cfg)
-
-
-    def connectSamplerSignals(self):
-        sampler_pin = 0
-        connected_pins = [] #['pin_a','pin_b'], ordered by how its connected to the sampler
-
-        for index in self.samplerIndexes():
-            signal_names = index.internalPointer().signals()
-            node_sampler_pins = []
-
-            for i, hal_pin in enumerate(index.internalPointer().halPins):
-                if hal_pin in self.samplerHalPins() and hal_pin is not None:
-                    if hal_pin not in connected_pins:
-                        subprocess.call(['halcmd', 'net', signal_names[i], hal_pin, '=>','sampler.0.pin.'+str(sampler_pin)])
-                        print(         '\nhalcmd', 'net', signal_names[i], hal_pin, '=>','sampler.0.pin.'+str(sampler_pin))
-
-                        connected_pins.append(hal_pin)
-                        node_sampler_pins.append(sampler_pin)
-                        sampler_pin += 1
-
-                    else:
-                        node_sampler_pins.append(connected_pins.index(hal_pin))
-
-            index.internalPointer().setSamplerPins(node_sampler_pins) # This is a list of indexes
-
-
-        subprocess.call(['halcmd', 'setp', 'sampler.0.enable', 'True'])
-        subprocess.call(['halcmd', 'addf', 'sampler.0', 'gui'])
-
-
-        # Sampler userspace component, stdbuf fixes bufering issue
-        self.p_sampler = subprocess.Popen(['stdbuf', '-oL', 'halcmd', 'loadusr', 'halsampler', '-c', '0', '-t'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
-
-        t = Thread(target=self.enqueue_sampler, args=(self.p_sampler.stdout, self.sampler_queue))
-        t.daemon = True
-        t.start()
 
 
 
@@ -322,20 +469,39 @@ class HalReader():
             current_sample = int(data[0])
             data.pop(0)
 
+            ''' # TODO:
+                     - Find what pins are different
+                     - figure out what indexes they belong to
+                     - Figure out how to do the setData for those indexes
+
+
+                     need to call setData
+
+                    A_Feedback:
+
+                    make a setHalData in the tool model?
+
+            '''
+
+
+
 
             for index in self.samplerIndexes():
+                node = index.internalPointer()
                 #List of indexes for what each bits sampler position is
-                sampler_pins = index.internalPointer().samplerPins()
-                val = 0
+                sampler_pins = node.samplerPins()
 
-                for shift, pin in enumerate(sampler_pins):
-                    bit = bool(int(data[pin])) #b'0' to False, b'1' to True
-                    val += bit<<shift
+                if node.typeInfo() in [strings.DigitalInputNode, strings.DigitalOutputNode]:
+                    val = 0
 
-                if val != self._tool_model.data(index.siblingAtColumn(20), QtCore.Qt.DisplayRole):
-                    self._tool_model.setData(index.siblingAtColumn(20), val)
-                    name = index.internalPointer().parent().name
-                    #print("setting index:", name,  ': ', val)
+                    for shift, pin in enumerate(sampler_pins):
+                        bit = bool(int(data[pin])) #b'0' to False, b'1' to True
+                        val += bit<<shift
+
+                    if val != self._tool_model.data(index.siblingAtColumn(20), QtCore.Qt.DisplayRole):
+                        self._tool_model.setData(index.siblingAtColumn(20), val)
+                        name = node.parent().name
+                        #print("setting index:", name,  ': ', val)
 
 
 

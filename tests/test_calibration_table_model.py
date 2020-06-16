@@ -10,8 +10,6 @@ from linuxnano.flags import TestingFlags
 from linuxnano.calibration_table_model import CalibrationTableModel
 
 
-
-
 def array_print(array):
     print('\n'.join(['\t'.join([str(cell) for cell in row]) for row in array]))
 
@@ -32,10 +30,10 @@ def good_data_arrays():
     tbl_3 = [['hal_value', 'gui_value'],
              [     0,   0.00],
              [   255, -70.63]]
-    
-    
+
+
     return [tbl_1, tbl_2, tbl_3]
-#TODO need to allow either increasing or decreasing 
+#TODO need to allow either increasing or decreasing
 @pytest.fixture
 def bad_data_arrays():
     tbl_1 = [['hal_value', 'gui_value'],
@@ -47,11 +45,11 @@ def bad_data_arrays():
              [  10,  0.00],
              [   1,  0.63],
              [ 255, 24.00]]
-    
+
     tbl_3 = [['hal_value', 'gui_value'],
              [0,  0.00],
              ['cat', 0,00]]
-    
+
     tbl_4 = [['hal_value', 'gui_value'],
              [0,    0.00]]
 
@@ -59,7 +57,7 @@ def bad_data_arrays():
              [     10,    0.00],
              [ -40.45,    0.63],
              [ -600.1,   24.00]]
-    
+
     tbl_6 = [['hal_value', 'gui_value'],
              [     10, 10],
              [ -40.45,  5],
@@ -87,7 +85,7 @@ def test_headerData(good_data_arrays):
 
     for good_data in good_data_arrays:
         table_model.setDataArray(good_data)
-        
+
         assert "HAL Value" == table_model.headerData(0,QtCore.Qt.Horizontal,QtCore.Qt.DisplayRole)
         assert "GUI Value" == table_model.headerData(1,QtCore.Qt.Horizontal,QtCore.Qt.DisplayRole)
         assert "0"         == table_model.headerData(0,QtCore.Qt.Vertical,QtCore.Qt.DisplayRole)
@@ -101,27 +99,29 @@ def test_setDataArray(good_data_arrays, bad_data_arrays):
         table_model.setDataArray(good_data)
         assert good_data == table_model.dataArray()
 
-    last_good_data = table_model.dataArray()
+
     for bad_data in bad_data_arrays:
-        table_model.setDataArray(bad_data)
-        assert last_good_data == table_model.dataArray()
-   
+        with pytest.raises(Exception) as e_info:
+            table_model.setDataArray(bad_data)
+
+
+
 def test_dataArray(good_data_arrays):
     table_model = CalibrationTableModel()
 
     for good_data in good_data_arrays:
         table_model.setDataArray(good_data)
-        
+
         returned_array = table_model.dataArray()
         returned_array_copy = copy.deepcopy(returned_array)
-        
+
         for i, row in enumerate(returned_array):
             for j, val in enumerate(row):
                 returned_array[i][j] = None
-       
+
         assert returned_array_copy == table_model.dataArray()
 
-   
+
 def test_setData_increasing():
     tbl_1 = [['hal_value', 'gui_value'],
              [          0,        0.00],
@@ -129,11 +129,11 @@ def test_setData_increasing():
              [         50,        3.10],
              [        100,        9.00],
              [        160,       24.00]]
-    
+
     table_model = CalibrationTableModel()
     table_model.setDataArray(tbl_1)
-   
-    
+
+
     #These should succeed at changing the data
     index = table_model.index(0,0, QtCore.QModelIndex())
     table_model.setData(index, -12.3, QtCore.Qt.EditRole)
@@ -146,17 +146,17 @@ def test_setData_increasing():
 
     #These should fail at changing the data
     index = table_model.index(0,0, QtCore.QModelIndex())
-    table_model.setData(index, 3999, QtCore.Qt.EditRole)
-    assert -12.3 == table_model.data(index,  QtCore.Qt.DisplayRole)
+    with pytest.raises(Exception) as e_info:
+        table_model.setData(index, 3999, QtCore.Qt.EditRole)
 
     index = table_model.index(0,1, QtCore.QModelIndex())
-    table_model.setData(index, 16000, QtCore.Qt.EditRole)
-    assert -1 == table_model.data(index,  QtCore.Qt.DisplayRole)
+    with pytest.raises(Exception) as e_info:
+        table_model.setData(index, 16000, QtCore.Qt.EditRole)
 
     index = table_model.index(2,0, QtCore.QModelIndex())
-    table_model.setData(index, 'cat', QtCore.Qt.EditRole)
-    assert 50 == table_model.data(index,  QtCore.Qt.DisplayRole)
-   
+    with pytest.raises(Exception) as e_info:
+        table_model.setData(index, 'cat', QtCore.Qt.EditRole)
+
     #These should work
     index = table_model.index(2,0, QtCore.QModelIndex())
     table_model.setData(index, 10.01, QtCore.Qt.EditRole)
@@ -173,11 +173,11 @@ def test_setData_decreasing():
              [        5.0,         300],
              [        7.5,           0],
              [       10.0,        -100]]
-    
+
     table_model = CalibrationTableModel()
     table_model.setDataArray(tbl_1)
-   
-    gui_col = 1 
+
+    gui_col = 1
     #These should succeed at changing the data
     index = table_model.index(0,gui_col, QtCore.QModelIndex())
     table_model.setData(index, 1200, QtCore.Qt.EditRole)
@@ -190,17 +190,17 @@ def test_setData_decreasing():
 
     #This should fail
     index = table_model.index(4,gui_col, QtCore.QModelIndex())
-    table_model.setData(index, 0, QtCore.Qt.EditRole)
-    assert -101 == table_model.data(index,  QtCore.Qt.DisplayRole)
+    with pytest.raises(Exception) as e_info:
+        table_model.setData(index, 0, QtCore.Qt.EditRole)
 
 def test_setData_increasing_to_decreasing():
     tbl_1 = [['hal_value', 'gui_value'],
              [        0.0,        10],
              [       10.0,       100]]
-    
+
     table_model = CalibrationTableModel()
     table_model.setDataArray(tbl_1)
-   
+
     gui_col = 1
 
     #If there's just two rows we can change if it's increasing or decreasing
@@ -216,7 +216,7 @@ def test_setData_increasing_to_decreasing():
 
 def test_removeRows():
     table_model = CalibrationTableModel()
-    
+
     tbl_1 = [['hal_value', 'gui_value'],
              [          0,        0.00],
              [         10,        0.63],
@@ -230,20 +230,20 @@ def test_removeRows():
     row_index = 1
     table_model.setDataArray(tbl_1)
     table_model.removeRows(row_index,number_to_remove)
-    
+
     tbl_2 = [['hal_value', 'gui_value'],
              [          0,        0.00],
              [        100,        9.66],
              [        255,       24.00]]
 
     assert tbl_2 == table_model.dataArray()
-   
+
 
     #Try removing 1 row
     number_to_remove = 1
     row_index = 0
     table_model.removeRows(row_index,number_to_remove)
-    
+
     tbl_3 = [['hal_value', 'gui_value'],
              [        100,        9.66],
              [        255,       24.00]]
@@ -254,7 +254,7 @@ def test_removeRows():
     number_to_remove = 1
     row_index = 0
     table_model.removeRows(row_index,number_to_remove)
-    
+
     assert tbl_3 == table_model.dataArray()
 
 
@@ -268,11 +268,11 @@ def test_insertRows():
              [         50,        3.10],
              [        100,        9.00],
              [        160,       24.00]]
-    
+
     table_model = CalibrationTableModel()
     table_model.setDataArray(tbl_1)
-   
-   
+
+
    #First try adding 1 row
     number_to_add = 1
     row_index = 1 #it's inserted above this index
@@ -287,7 +287,7 @@ def test_insertRows():
 
     table_model.insertRows(row_index,number_to_add)
     assert tbl_2 == table_model.dataArray()
-   
+
 
     #Try adding 2 rows
     number_to_add = 2
@@ -304,8 +304,8 @@ def test_insertRows():
 
     table_model.insertRows(row_index,number_to_add)
     assert tbl_3 == table_model.dataArray()
-    
-    
+
+
     #Try adding 2 rows at beginning
     number_to_add = 2
     row_index = 0 #it's inserted above this index
@@ -321,10 +321,10 @@ def test_insertRows():
              [        140,         19.0],
              [        160,        24.00]] #row 9
 
-    
+
     table_model.insertRows(row_index,number_to_add)
     assert tbl_4 == table_model.dataArray()
-   
+
 
     #Try adding 2 rows at the end
     number_to_add = 2
@@ -332,7 +332,7 @@ def test_insertRows():
 
     tbl_5 = [['hal_value', 'gui_value'],
              [        -10,        -0.60],  #row 0
-             [         -5,        -0.30],  
+             [         -5,        -0.30],
              [          0,         0.00],
              [          5,         0.30],
              [         10,         0.60],
@@ -356,18 +356,13 @@ def test_flags(good_data_arrays):
 
     for good_data in good_data_arrays:
         table_model.setDataArray(good_data)
-       
+
         main_data = good_data[1:]
 
 
         for i, row in enumerate(main_data):
             hal_flags = table_model.flags(table_model.index(i, hal_col, QtCore.QModelIndex()))
             gui_flags = table_model.flags(table_model.index(i, gui_col, QtCore.QModelIndex()))
-            
+
             assert hal_flags == QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
             assert gui_flags == QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
-       
-
-        
-        
-

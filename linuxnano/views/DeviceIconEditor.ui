@@ -30,6 +30,9 @@
        <property name="text">
         <string>Background SVG</string>
        </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
       </widget>
      </item>
      <item row="0" column="1">
@@ -108,12 +111,15 @@
       <widget class="QLabel" name="label_4">
        <property name="minimumSize">
         <size>
-         <width>75</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
        <property name="text">
         <string>X Position</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -131,12 +137,15 @@
       <widget class="QLabel" name="label_5">
        <property name="minimumSize">
         <size>
-         <width>75</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
        <property name="text">
         <string>Y Position</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -154,12 +163,15 @@
       <widget class="QLabel" name="label_6">
        <property name="minimumSize">
         <size>
-         <width>75</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
        <property name="text">
         <string>Scale</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -177,12 +189,15 @@
       <widget class="QLabel" name="label_7">
        <property name="minimumSize">
         <size>
-         <width>75</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
        <property name="text">
         <string>Rotation</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -200,56 +215,43 @@
       <widget class="QLabel" name="label_11">
        <property name="minimumSize">
         <size>
-         <width>75</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
        <property name="text">
-        <string>Number Node</string>
+        <string>Has Text</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
      <item row="6" column="1">
-      <widget class="QComboBox" name="ui_icon_node_list"/>
-     </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_8">
-       <property name="minimumSize">
-        <size>
-         <width>75</width>
-         <height>0</height>
-        </size>
-       </property>
+      <widget class="QCheckBox" name="ui_has_text">
        <property name="text">
-        <string>Number X Position</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="1">
-      <widget class="QDoubleSpinBox" name="ui_number_x">
-       <property name="minimum">
-        <double>-250.000000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>250.000000000000000</double>
+        <string/>
        </property>
       </widget>
      </item>
      <item row="8" column="0">
-      <widget class="QLabel" name="label_9">
+      <widget class="QLabel" name="label_8">
        <property name="minimumSize">
         <size>
-         <width>75</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
        <property name="text">
-        <string>Number Y Position</string>
+        <string>Text X Position</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
      <item row="8" column="1">
-      <widget class="QDoubleSpinBox" name="ui_number_y">
+      <widget class="QDoubleSpinBox" name="ui_text_x">
        <property name="minimum">
         <double>-250.000000000000000</double>
        </property>
@@ -259,20 +261,49 @@
       </widget>
      </item>
      <item row="9" column="0">
+      <widget class="QLabel" name="label_9">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Text Y Position</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QDoubleSpinBox" name="ui_text_y">
+       <property name="minimum">
+        <double>-250.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>250.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="0">
       <widget class="QLabel" name="label_10">
        <property name="minimumSize">
         <size>
-         <width>75</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
        <property name="text">
         <string>Font Size</string>
        </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
       </widget>
      </item>
-     <item row="9" column="1">
-      <widget class="QSpinBox" name="ui_number_font_size">
+     <item row="10" column="1">
+      <widget class="QSpinBox" name="ui_font_size">
        <property name="minimum">
         <number>6</number>
        </property>
@@ -280,6 +311,25 @@
         <number>72</number>
        </property>
       </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Text</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QLineEdit" name="ui_text"/>
      </item>
     </layout>
    </item>

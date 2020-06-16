@@ -3,6 +3,7 @@
 
 class TestingFlags():
     ENABLE_MANUAL_TESTING = True
+
     AUTO_CLOSE_MESSAGE_BOX = False
     TEST_WAIT_LONG = 500
     TEST_WAIT_SHORT = 250

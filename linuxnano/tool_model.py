@@ -2,8 +2,22 @@ from PyQt5 import QtCore, QtGui
 
 from linuxnano.strings import strings
 from linuxnano.data import Node, ToolNode, SystemNode, DeviceNode, DeviceIconNode, DigitalInputNode, DigitalOutputNode, AnalogInputNode, AnalogOutputNode
+from linuxnano.data import BoolVarNode, FloatVarNode
 from linuxnano.message_box import MessageBox
 
+
+########################################
+#  ToolNode                   :
+#    SystemNode               :
+#      DeviceNode             :
+#        DeviceIconNode       :
+#        DigitalInputputNode  :
+#        DigitalOutputputNode :
+#        AnalogInputputNode   :
+#        AnalogOutputputNode  :
+#        BoolVarNode          :
+#        FloatVarNode         :
+########################################
 
 class ToolModel(QtCore.QAbstractItemModel):
     '''The tool model represents an entire tool in a tree structure.'''
@@ -12,59 +26,98 @@ class ToolModel(QtCore.QAbstractItemModel):
         super().__init__(parent)
         self._root_node = Node()
 
-    def asXml(self):
-        return self._root_node.asXml()
+    def asJSON(self):
+        return self._root_node.asJSON()
 
-    #TODO: Do we clear the current tree if there's one?
-    def loadTool(self, tool_tree):
+
+    def loadJSON(self, json):
         try:
-            root_index = self.createIndex(0,0,self._root_node)
+            if json['type_info'] == 'root':
+                root_index = self.createIndex(0, 0, self._root_node)
+                root_index.internalPointer().loadAttrs(json)
 
-            tool_item = tool_tree.getroot()
-            tool_index = self.insertChild(root_index, strings.TOOL_NODE)
-            tool_index.internalPointer().loadAttribFromXML(tool_item)
-
-            for system_item in tool_item.findall(strings.SYSTEM_NODE):
-                system_index = self.insertChild(tool_index, strings.SYSTEM_NODE)
-
-                for device_item in system_item.findall(strings.DEVICE_NODE):
-                    device_index = self.insertChild(system_index, strings.DEVICE_NODE)
-
-                    device_icon_xml = device_item.find(strings.DEVICE_ICON_NODE)
-                    device_icon_index = self.insertChild(device_index, strings.DEVICE_ICON_NODE)
-
-                    for xml_item in device_item.findall(strings.D_IN_NODE):
-                        d_in_index = self.insertChild(device_index, strings.D_IN_NODE)
-                        d_in_index.internalPointer().loadAttribFromXML(xml_item)
-
-                    for xml_item in device_item.findall(strings.D_OUT_NODE):
-                        d_out_index = self.insertChild(device_index, strings.D_OUT_NODE)
-                        d_out_index.internalPointer().loadAttribFromXML(xml_item)
-
-                    for xml_item in device_item.findall(strings.A_IN_NODE):
-                        a_in_index = self.insertChild(device_index, strings.A_IN_NODE)
-                        a_in_index.internalPointer().loadAttribFromXML(xml_item)
-
-                    for xml_item in device_item.findall(strings.A_OUT_NODE):
-                        a_out_index = self.insertChild(device_index, strings.A_OUT_NODE)
-                        a_out_index.internalPointer().loadAttribFromXML(xml_item)
-
-                    #Must load after analog nodes since we have an analog node name
-                    if device_icon_xml is not None:
-                       device_icon_index.internalPointer().loadAttribFromXML(device_icon_xml)
-
-                    device_index.internalPointer().loadAttribFromXML(device_item)
-                system_index.internalPointer().loadAttribFromXML(system_item)
-
-            return True
+                for child in json['children']:
+                    index = self.insertChild(root_index, child['type_info'])
+                    index.internalPointer().loadAttrs(child)
+                    self._recurseJSON(index, child)
 
         except Exception as e:
-            MessageBox("Failed to load tool from element tree", e)
+            MessageBox("Failed to behavior from JSON", e)
             return False
 
 
+    def _recurseJSON(self, parent_index, json):
+        for child in json['children']:
+            index = self.insertChild(parent_index, child['type_info'])
+            index.internalPointer().loadAttrs(child)
+            self._recurseJSON(index, child)
+
+
+
+
+
+
+
+
+
+    #''''Probably get rid of this soon'''
+    ##TODO: Do we clear the current tree if there's one?
+    #def loadTool(self, tool_tree):
+    #    try:
+    #        root_index = self.createIndex(0,0,self._root_node)
+#
+    #        tool_item = tool_tree.getroot()
+    #        tool_index = self.insertChild(root_index, strings.TOOL_NODE)
+    #        tool_index.internalPointer().loadAttribFromXML(tool_item)
+#
+    #        for system_item in tool_item.findall(strings.SYSTEM_NODE):
+    #            system_index = self.insertChild(tool_index, strings.SYSTEM_NODE)
+#
+    #            for device_item in system_item.findall(strings.DEVICE_NODE):
+    #                device_index = self.insertChild(system_index, strings.DEVICE_NODE)
+#
+    #                device_icon_xml = device_item.find(strings.DEVICE_ICON_NODE)
+    #                device_icon_index = self.insertChild(device_index, strings.DEVICE_ICON_NODE)
+#
+    #                for xml_item in device_item.findall(strings.D_IN_NODE):
+    #                    d_in_index = self.insertChild(device_index, strings.D_IN_NODE)
+    #                    d_in_index.internalPointer().loadAttribFromXML(xml_item)
+#
+    #                for xml_item in device_item.findall(strings.D_OUT_NODE):
+    #                    d_out_index = self.insertChild(device_index, strings.D_OUT_NODE)
+    #                    d_out_index.internalPointer().loadAttribFromXML(xml_item)
+#
+    #                for xml_item in device_item.findall(strings.A_IN_NODE):
+    #                    a_in_index = self.insertChild(device_index, strings.A_IN_NODE)
+    #                    a_in_index.internalPointer().loadAttribFromXML(xml_item)
+#
+    #                for xml_item in device_item.findall(strings.A_OUT_NODE):
+    #                    a_out_index = self.insertChild(device_index, strings.A_OUT_NODE)
+    #                    a_out_index.internalPointer().loadAttribFromXML(xml_item)
+#
+    #                #Must load after analog nodes since we have an analog node name
+    #                if device_icon_xml is not None:
+    #                   device_icon_index.internalPointer().loadAttribFromXML(device_icon_xml)
+#
+    #                device_index.internalPointer().loadAttribFromXML(device_item)
+    #            system_index.internalPointer().loadAttribFromXML(system_item)
+#
+    #        return True
+#
+    #    except Exception as e:
+    #        MessageBox("Failed to load tool from element tree", e)
+    #        return False
+
+
+
+
+
+
+
+
+
     def rowCount(self, parent):
-        '''Returns the number of children'''
+        #Number of children
         if not parent.isValid():
             parentNode = self._root_node
         else:
@@ -73,8 +126,12 @@ class ToolModel(QtCore.QAbstractItemModel):
         return parentNode.childCount()
 
     def columnCount(self, parent):
-        '''Number of columns the QTreeView displays '''
+        #Number of columns the QTreeView displays
         return 2
+
+
+
+
 
     def possibleChildren(self, index):
         node_type = index.internalPointer().typeInfo()
@@ -90,12 +147,14 @@ class ToolModel(QtCore.QAbstractItemModel):
                     strings.D_IN_NODE,
                     strings.D_OUT_NODE,
                     strings.A_IN_NODE,
-                    strings.A_OUT_NODE]
+                    strings.A_OUT_NODE,
+                    strings.BOOL_VAR_NODE,
+                    strings.FLOAT_VAR_NODE]
 
         elif node_type == strings.DEVICE_ICON_NODE:
             return []
 
-        elif node_type in [strings.DIGITAL_INPUT_NODE, strings.DIGITAL_OUTPUT_NODE, strings.ANALOG_INPUT_NODE, strings.ANALOG_OUTPUT_NODE]:
+        elif node_type in [strings.D_IN_NODE, strings.D_OUT_NODE, strings.A_IN_NODE, strings.A_OUT_NODE, strings.BOOL_VAR_NODE, strings.FLOAT_VAR_NODE]:
             return []
 
 
@@ -116,31 +175,34 @@ class ToolModel(QtCore.QAbstractItemModel):
         elif node_type == strings.DEVICE_NODE and new_child_type == strings.DEVICE_ICON_NODE:
             return [0]
 
-        elif node_type == strings.DEVICE_NODE and new_child_type in [strings.D_IN_NODE, strings.D_OUT_NODE, strings.A_IN_NODE, strings.A_OUT_NODE]:
+        elif node_type == strings.DEVICE_NODE and new_child_type in [strings.D_IN_NODE, strings.D_OUT_NODE, strings.A_IN_NODE, strings.A_OUT_NODE, strings.BOOL_VAR_NODE, strings.FLOAT_VAR_NODE]:
             return list(range(1,1+node.childCount()))
 
         return []
 
 
 
-    def insertChild(self, parent_index, child_type, preferred_row = None):
+    def insertChild(self, parent_index, child_type, insert_row = None):
         parent_node  = parent_index.internalPointer()
-        allowed_rows = self.allowedInsertRows(parent_index, child_type)
+        #allowed_rows = self.allowedInsertRows(parent_index, child_type)
 
-        if not allowed_rows:
-            msg = "Child of type " + child_type + " cannot be inserted into " + parent_node.typeInfo()
-            MessageBox(msg)
-            return False
+        if insert_row is None:
+            insert_row = parent_index.internalPointer().childCount()
 
-
-        if preferred_row is None:
-            insert_row = allowed_rows[-1]
-
-        elif preferred_row in allowed_rows:
-            insert_row = preferred_row
-        else:
-            MessageBox("Attempting to insert child in tool model at bad row", "row: ", preferred_row, "allowed rows: ", allowed_rows)
-            return False
+        #if not allowed_rows:
+        #    msg = "Child of type " + child_type + " cannot be inserted into " + parent_node.typeInfo()
+        #    MessageBox(msg)
+        #    return False
+#
+#
+        #if preferred_row is None:
+        #    insert_row = allowed_rows[-1]
+#
+        #elif preferred_row in allowed_rows:
+        #    insert_row = preferred_row
+        #else:
+        #    MessageBox("Attempting to insert child in tool model at bad row", "row: ", preferred_row, "allowed rows: ", allowed_rows)
+        #    return False
 
 
         if insert_row is not False:
@@ -154,6 +216,8 @@ class ToolModel(QtCore.QAbstractItemModel):
             elif  child_type == strings.D_OUT_NODE       : parent_node.insertChild(insert_row, DigitalOutputNode())
             elif  child_type == strings.A_IN_NODE        : parent_node.insertChild(insert_row, AnalogInputNode())
             elif  child_type == strings.A_OUT_NODE       : parent_node.insertChild(insert_row, AnalogOutputNode())
+            elif  child_type == strings.BOOL_VAR_NODE    : parent_node.insertChild(insert_row, BoolVarNode())
+            elif  child_type == strings.FLOAT_VAR_NODE   : parent_node.insertChild(insert_row, FloatVarNode())
 
             else: MessageBox('Attempting to insert unknown node of type', child_type)
 
@@ -224,6 +288,11 @@ class ToolModel(QtCore.QAbstractItemModel):
             node = index.internalPointer()
             node.setData(index.column(), value)
             self.dataChanged.emit(index, index)
+
+            if index.column() == 10 and node.typeInfo() in strings.HAL_NODES:
+                self.dataChanged.emit(index.siblingAtColumn(11), index.siblingAtColumn(11))
+
+
             return True
 
         return False
@@ -261,15 +330,18 @@ class ToolModel(QtCore.QAbstractItemModel):
     def index(self, row, column, parent_index):
         if parent_index.isValid():
             parent_node = parent_index.internalPointer()
-        else:
-            parent_node = self._root_node
-
-        child_item = parent_node.child(row)
-
-        if child_item:
+            child_item = parent_node.child(row)
             return self.createIndex(row, column, child_item)
+
         else:
-            return QtCore.QModelIndex()
+            return self.createIndex(0, 0, self._root_node)
+
+        #root_index = self.createIndex(0, 0, self._root_node)
+
+        #if child_item:
+        #    return self.createIndex(row, column, child_item)
+        #else:
+        #    return QtCore.QModelIndex()
 
 
 

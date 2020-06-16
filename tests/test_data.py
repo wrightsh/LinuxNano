@@ -10,19 +10,20 @@ from linuxnano.flags import TestingFlags
 from linuxnano.strings import strings
 
 from linuxnano.data import Node, ToolNode, SystemNode, DeviceNode, DeviceIconNode, HalNode, DigitalInputNode, DigitalOutputNode, AnalogInputNode, AnalogOutputNode
+from linuxnano.data import BoolVarNode, FloatVarNode
 from linuxnano.digital_state_table_model import DigitalStateTableModel
 from linuxnano.analog_state_table_model import AnalogStateTableModel
 from linuxnano.calibration_table_model import CalibrationTableModel
 from linuxnano.device_state_table_model import DeviceStateTableModel
 
+import json
 
-
-@pytest.fixture(params=['tests/tools/tool_model_1.xml'])
-def tool_model(request):
-    tree = ET.parse(request.param)
-    tool_model = ToolModel()
-    tool_model.loadTool(tree)
-    return tool_model
+#@pytest.fixture(params=['tests/tools/tool_model_1.xml'])
+#def tool_model(request):
+#    tree = ET.parse(request.param)
+#    tool_model = ToolModel()
+#    tool_model.loadTool(tree)
+#    return tool_model
 
 
 
@@ -33,25 +34,48 @@ def test_node_attrs():
     assert node.attrs() == {'description': '', 'name': 'unknown'}
 
 
-def test_node_asXml():
+def test_node_asJSON_and_load():
     root = Node()
     child_1 = Node()
     child_2 = Node()
 
     root.addChild(child_1)
     root.addChild(child_2)
-    xml1 = '''<root description="" name="unknown">\n    <root description="" name="unknown"/>\n    <root description="" name="unknown_new"/>\n</root>\n'''
-    xml2 = '''<root name="unknown" description="">\n    <root name="unknown" description=""/>\n    <root name="unknown_new" description=""/>\n</root>\n'''
-
-    assert root.asXml() in [xml1, xml2] #xml properties are in random order, there's a qSetGlobalQHashSeed but I can't import QHash
 
 
-def test_node_loadAttribFromXML():
-    node = Node()
-    tree = ET.fromstring("<Tool_Node name='A_name' description='my desc'></Tool_Node>")
-    node.loadAttribFromXML(tree)
-    assert node.name == "A_name"
-    assert node.description == "my desc"
+    standard = json.loads('''{
+                        "children": [
+                            {
+                                "children": [],
+                                "description": "",
+                                "name": "unknown",
+                                "type_info": "root"
+                            },
+                            {
+                                "children": [],
+                                "description": "",
+                                "name": "unknown_new",
+                                "type_info": "root"
+                            }
+                        ],
+                        "description": "",
+                        "name": "unknown",
+                        "type_info": "root"
+                    }''')
+
+    new = json.loads('''{
+                        "description": "my desc.",
+                        "name": "A_name",
+                        "type_info": "root"
+                    }''')
+
+
+    assert standard == json.loads(root.asJSON())
+
+    #This will only load the properties for the node, the recursion in in the model
+    root.loadAttrs(new)
+    assert root.name == "A_name"
+    assert root.description == "my desc."
 
 
 def test_node_typeInfo():
@@ -65,7 +89,6 @@ def test_node_addChild():
 
     root.addChild(child_1)
     assert child_1 == root.child(0)
-
 
 def test_node_insertChild():
     root = Node()
@@ -150,21 +173,15 @@ def test_node_row():
 
 def test_node_setData():
     root = Node()
-    root.setData(0, "my_nam e") #It should remove the space
-    root.setData(1, "typeinfo is hard coded")
+    root.setData(0, "typeinfo is hard coded")
+    root.setData(1, "my_nam e") #It should remove the space
     root.setData(2, "my description")
 
-    assert root.data(0) == "my_name"
-    assert root.data(1) == "root"
+    assert root.data(0) == "root"
+    assert root.data(1) == "my_name"
     assert root.data(2) == "my description"
 
 
-def test_node_log():
-    root    = Node()
-    child_1 = Node()
-    root.addChild(child_1)
-
-    assert isinstance(root.log(), str)
 
 
 ########## ToolNode ##########
@@ -172,33 +189,26 @@ def test_ToolNode_typeInfo():
     tool  = ToolNode()
     assert tool.typeInfo() == strings.TOOL_NODE
 
-def test_ToolNode_iconResource():
-    tool  = ToolNode()
-    assert tool.iconResource() == strings.TREE_ICON_TOOL_NODE
-
 
 ########## SystemNode ##########
 def test_SystemNode_typeInfo():
     system  = SystemNode()
     assert system.typeInfo() == strings.SYSTEM_NODE
 
-def test_SystemNode_iconResource():
-    system  = SystemNode()
-    assert system.iconResource() == strings.TREE_ICON_SYSTEM_NODE
 
 def test_SystemNode_setData():
     node = SystemNode()
-    node.setData(0, "my_system_name")
-    node.setData(1, "typeinfo is hard coded")
+    node.setData(0, "typeinfo is hard coded")
+    node.setData(1, "my_system_name")
     node.setData(2, "my description")
     node.setData(10, strings.DEFAULT_SYSTEM_BACKGROUND)
 
-    assert node.data(0) == "my_system_name"
-    assert node.data(1) == strings.SYSTEM_NODE
+    assert node.data(0) == strings.SYSTEM_NODE
+    assert node.data(1) == "my_system_name"
     assert node.data(2) == "my description"
     assert node.data(10) == strings.DEFAULT_SYSTEM_BACKGROUND
 
-def test_SystemNode_backgroundSVG_property():
+def test_SystemNode_backgroundSVG():
     node = SystemNode()
 
     assert node.backgroundSVG == strings.DEFAULT_SYSTEM_BACKGROUND
@@ -212,95 +222,16 @@ def test_DeviceNode_typeInfo():
     device  = DeviceNode()
     assert device.typeInfo() == strings.DEVICE_NODE
 
-def test_DeviceNode_iconResource():
-    device  = DeviceNode()
-    assert device.iconResource() == strings.TREE_ICON_DEVICE_NODE
-
-def test_DeviceNode_addChild():
-    device  = DeviceNode()
-    d_out = DigitalOutputNode()
-
-    device.addChild(d_out)
-    assert d_out == device.child(0)
-
-def test_node_insertChild():
-    device  = DeviceNode()
-    d_out_1 = DigitalOutputNode()
-    d_out_2 = DigitalOutputNode()
-    d_out_3 = DigitalOutputNode()
-
-    device.addChild(d_out_1)
-    device.addChild(d_out_3)
-    device.insertChild(1,d_out_2)
-
-    assert d_out_1 == device.child(0)
-    assert d_out_2 == device.child(1)
-    assert d_out_3 == device.child(2)
-
-def test_node_removeChild():
-    device  = DeviceNode()
-    d_out_1 = DigitalOutputNode()
-    d_out_2 = DigitalOutputNode()
-    d_out_3 = DigitalOutputNode()
-
-    device.addChild(d_out_1)
-    device.addChild(d_out_2)
-    device.addChild(d_out_3)
-
-    device.removeChild(1)
-    assert device.childCount() == 2
-
-    device.removeChild(1)
-    assert device.childCount() == 1
-
-    device.removeChild(1)
-    assert device.childCount() == 1
-
-    device.removeChild(0)
-    assert device.childCount() == 0
-
-
-def test_DeviceNode_deviceStateTableModel():
-    device  = DeviceNode()
-    assert type(device.deviceStateTableModel()) == type(DeviceStateTableModel())
-
-
-def test_DeviceNode_halNodeChanged():
-    device  = DeviceNode()
-    d_out = DigitalOutputNode()
-
-    halPins=['pin_a']
-    states=['Open','Close']
-    isUsed=[True,True]
-
-    d_out.halPins = halPins
-    d_out.states = states
-    d_out.isUsed = isUsed
-
-    device.addChild(d_out)
-    device.halNodeChanged()
-
-
-#TODO Shouldn't be able to directly set status
 def test_DeviceNode_setData():
     device  = DeviceNode()
 
-    #TODO Shouldn't be able to directly set status
+    new_status = 'The devices behavior tree will set the status.'
     current_status = device.data(10)
-    device.setData(10, 'cant edit this way')
-    assert current_status == device.data(10)
-
-    #Can't change the table model
-    current_model = device.data(15)
-    new_model = DeviceStateTableModel()
-    device.setData(15, new_model)
-    assert device.data(15) == current_model
-
-
+    device.setData(10, new_status)
+    assert device.data(10) == new_status
 
 def test_DeviceNode_iconLayerList():
     device = DeviceNode()
-
     icon_node = DeviceIconNode()
     icon_node.setData(10, 'linuxnano/resources/icons/valves/valve.svg')
 
@@ -309,99 +240,43 @@ def test_DeviceNode_iconLayerList():
     assert device.iconLayerList().names == ['closed', 'closing', 'open', 'opening', 'fault']
 
 
-def test_DeviceNode_deviceStates():
-    device  = DeviceNode()
-    d_out = DigitalOutputNode()
-
-    halPins=['pin_a']
-    states=['Open','Close']
-    isUsed=[True,True]
-
-    d_out.halPins = halPins
-    d_out.states = states
-    d_out.isUsed = isUsed
-
-    device.addChild(d_out)
-    device.halNodeChanged()
-
-    xml_string_device = "[['state', 'status', 'icon_layer', 'is_warning', 'warning_timeout', 'warning_message', 'is_alarm', 'alarm_timeout', 'alarm_message','triggers_action', 'action_timeout', 'action', 'log_entrance'],[0, 'Close', 'close', False,  0,'', False,  0,'', False, 0, None,  True],[1, 'Open' ,  'open',  True, 10, 'taking too long',  True, 20, 'failed to open', False, 0, None, False]]"
-
-    device.deviceStates = xml_string_device
-    assert device.deviceStates == ast.literal_eval(xml_string_device)
-
-
 
 ########## DeviceIconNode ##########
 def test_DeviceIconNode_typeInfo():
     node = DeviceIconNode()
     assert node.typeInfo() == strings.DEVICE_ICON_NODE
 
-def test_DeviceIconNode_iconResource():
-    node = DeviceIconNode()
-    assert node.iconResource() == strings.TREE_ICON_DEVICE_ICON_NODE
-
-
 def test_DeviceIconNode_setData():
-    node = DeviceIconNode()
-
     device  = DeviceNode()
-    d_out_1 = DigitalOutputNode()
-    d_out_2 = DigitalOutputNode()
-    d_out_3 = DigitalOutputNode()
-
-    a_in_1 = AnalogInputNode()
-    a_in_2 = AnalogInputNode()
-
-    device.addChild(d_out_1)
-    device.addChild(d_out_2)
-    device.addChild(d_out_3)
-    device.addChild(a_in_1)
-    device.addChild(a_in_2)
+    node = DeviceIconNode()
     device.addChild(node)
 
-    a_in_1.setData(0, 'AnalogName')
-    a_in_2.setData(0, 'AnalogName2')
+    node.setData(10, 'linuxnano/resources/icons/valves/valve.svg') #svg
+    node.setData(11, 'closing') #svg layer
+    node.setData(12, 51) #x
+    node.setData(13, 57) #y
+    node.setData(14, 1.12) #scale
+    node.setData(15, 90) #rotation
 
-
-    node.setData(10, 'linuxnano/resources/icons/valves/valve.svg')
-    node.setData(11, 'closing')
-    node.setData(14, 51)
-    node.setData(15, 57)
-    node.setData(16, 1.12)
-    node.setData(17, 90)
-    node.setData(18, 1) #Connected to a QComboBox so it uses enum and an index
-    node.setData(19, 63)
-    node.setData(20, 60)
-    node.setData(21, 18)
+    node.setData(16, True) #hasText
+    node.setData(17, 'a word') #text
+    node.setData(18, 63) #textX
+    node.setData(19, 60) #textY
+    node.setData(20, 18) #textFontSize
 
     assert node.data(10) == 'linuxnano/resources/icons/valves/valve.svg'
     assert node.data(11) == 'closing'
-    assert node.data(14) == 51
-    assert node.data(15) == 57
-    assert node.data(16) == 1.12
-    assert node.data(17) == 90
-    assert node.data(18) == 1 #Connected to a QComboBox so it uses enum and an index
-    assert node.data(19) == 63
-    assert node.data(20) == 60
-    assert node.data(21) == 18
+    assert node.data(12) == 51
+    assert node.data(13) == 57
+    assert node.data(14) == 1.12
+    assert node.data(15) == 90
 
-def test_DeviceIconNode_numberNodes():
-    node = DeviceIconNode()
+    assert node.data(16) == True
+    assert node.data(17) == 'a word'
+    assert node.data(18) == 63
+    assert node.data(19) == 60
+    assert node.data(20) == 18
 
-    device  = DeviceNode()
-    d_out_1 = DigitalOutputNode()
-    a_in_1  = AnalogInputNode()
-    a_in_2  = AnalogInputNode()
-
-    device.addChild(d_out_1)
-    device.addChild(a_in_1)
-    device.addChild(a_in_2)
-    device.addChild(node)
-
-    a_in_1.setData(0, 'Pressure')
-    a_in_2.setData(0, 'Flow')
-
-    assert node.numberNodes().names == ['None', 'Pressure', 'Flow']
 
 def test_DeviceIconNode_layers():
     node = DeviceIconNode()
@@ -413,14 +288,47 @@ def test_DeviceIconNode_layers():
 
 
 ########## HalNode ##########
+#TODO: signalName or move that to the manual file
+
 def test_HalNode_typeInfo():
     node = HalNode()
     with pytest.raises(Exception) as e_info:
         node.typeInfo()
 
+def test_HalNode_setData():
+    node = HalNode()
+
+    node.setData(10, 'new_pin_name')
+    assert node.data(10) == 'new_pin_name'
+
+
+def test_HalNode_samplerStreamerIndex():
+    node = HalNode()
+    node.setSamplerIndex(17)
+    assert node.samplerIndex() == 17
+
+    with pytest.raises(Exception) as e_info:
+        node.setSamplerIndex('wrong')
+
+    node.setStreamerIndex(7)
+    assert node.streamerIndex() == 7
+
+    with pytest.raises(Exception) as e_info:
+        node.setSamplerIndex('wrong')
+
+def test_HalNode_manualQueue():
+    node = HalNode()
+    node.manualQueuePut('thing_1')
+    node.manualQueuePut('thing_2')
+    node.manualQueuePut('thing_3')
+
+    assert node.manualQueueGet() == 'thing_1'
+    assert node.manualQueueGet() == 'thing_2'
+    assert node.manualQueueGet() == 'thing_3'
+
+
 
 ########## DigitalInputNode ##########
-#Cant add generic HalNode to a device so must test name function like this
 def test_DigitalInputNode_name():
     device  = DeviceNode()
     node_1 = DigitalInputNode()
@@ -449,105 +357,47 @@ def test_DigitalInputNode_typeInfo():
     node = DigitalInputNode()
     assert node.typeInfo() == strings.D_IN_NODE
 
-def test_DigitalInputNode_iconResource():
-    node = DigitalInputNode()
-    assert node.iconResource() == strings.TREE_ICON_D_IN_NODE
-
-def test_DigitalInputNode_stateTableModel():
-    node = DigitalInputNode()
-    assert type(node.stateTableModel()) == type(DigitalStateTableModel())
-
-def test_DigitalInputNode_numberOfStates():
+def test_DigitalInputNode_displayValue():
     node = DigitalInputNode()
 
-    xml_string = "[['state','gui_name'],[0, 'Button 1'],[1, 'Button 2'], [2, 'Button 3'], [3, 'Button 4']]"
-    node.stateTableData = xml_string
+    node.displayValueOff = 'down'
+    assert node.displayValueOff == 'down'
 
-    assert node.numberOfStates() == 4
-    assert node.stateTableData == ast.literal_eval(xml_string)
+    node.displayValueOn = 'up'
+    assert node.displayValueOn == 'up'
 
-    xml_string = "[['state','gui_name'],[0, 'Off'],[1, 'On']]"
-    node.stateTableData = xml_string
-    assert node.numberOfStates() == 2
-    assert node.stateTableData == ast.literal_eval(xml_string)
+    node.setData(20, False)
+    assert node.data(20) == False
+    assert node.data(21) == 'down'
 
-def test_DigitalInputNode_states():
-    node = DigitalInputNode()
-
-    xml_string = "[['state','gui_name'],[0, 'Button 1'],[1, 'Button 2'],[2, 'Button 3'],[3, 'Button 4']]"
-    node.stateTableData = xml_string
-
-    states = ['Button 1','Button 2','Button 3','Button 4']
-    assert node.states() == states
-
-def test_DigitalInputNode_stateTableData():
-    good_xml = "[['state','gui_name'],[0, 'Off'],[1, 'On']]"
-    malformed_xml = "[['state','gui_name'],[0, 'Off'],[1, 'On']]]"
-
-    node = DigitalInputNode()
-    node.stateTableData = good_xml
-    assert node.stateTableData == ast.literal_eval(good_xml)
-    node.stateTableData = malformed_xml
-    assert node.stateTableData == ast.literal_eval(good_xml)
+    node.setData(20, True)
+    assert node.data(20) == True
+    assert node.data(21) == 'up'
 
 
 ########## DigitalOutputNode ##########
 def test_DigitalOutputNode_typeInfo():
     node = DigitalOutputNode()
-    assert node.typeInfo() == strings.DIGITAL_OUTPUT_NODE
+    assert node.typeInfo() == strings.D_OUT_NODE
 
-def test_DigitalOutputNode_iconResource():
-    node = DigitalOutputNode()
-    assert node.iconResource() == strings.TREE_ICON_D_OUT_NODE
-
-def test_DigitalOutputNode_stateTableModel():
-    node = DigitalOutputNode()
-    assert type(node.stateTableModel()) == type(DigitalStateTableModel())
-
-def test_DigitalOutputNode_numberOfStates():
+def test_DigitalOutputNode_valueName():
     node = DigitalOutputNode()
 
-    xml_string = "[['state','gui_name','is_used'],[0, 'Button 1',True],[1, 'Button 2',True],[2, 'Button 3',True],[3, 'NA',False]]"
-    node.stateTableData = xml_string
+    node.displayValueOff = 'down'
+    assert node.displayValueOff == 'down'
 
-    assert node.numberOfStates() == 4
-    assert node.stateTableData == ast.literal_eval(xml_string)
+    node.displayValueOn = 'up'
+    assert node.displayValueOn == 'up'
 
-    xml_string = "[['state','gui_name','is_used'],[0, 'Off',True],[1, 'On',True]]"
-    node.stateTableData = xml_string
-    assert node.numberOfStates() == 2
-    assert node.stateTableData == ast.literal_eval(xml_string)
+    node.setData(20, False)
+    assert node.data(20) == False
+    assert node.data(21) == 'down'
 
-def test_DigitalOutputNode_states():
-    node = DigitalOutputNode()
+    node.setData(20, True)
+    assert node.data(20) == True
+    assert node.data(21) == 'up'
 
-    xml_string = "[['state','gui_name','is_used'],[0, 'Button 1',True],[1, 'Button 2',True],[2, 'Button 3',True],[3, 'NA',False]]"
-    node.stateTableData = xml_string
 
-    states = ['Button 1','Button 2','Button 3','NA']
-    assert node.states() == states
-
-def test_DigitalOutputNode_manualDisplayType():
-    node = DigitalOutputNode()
-
-    node.manualDisplayType = strings.MANUAL_DISPLAY_BUTTONS
-    assert node.manualDisplayType == strings.MANUAL_DISPLAY_BUTTONS
-
-    node.manualDisplayType = strings.MANUAL_DISPLAY_COMBO_BOX
-    assert node.manualDisplayType == strings.MANUAL_DISPLAY_COMBO_BOX
-
-    node.manualDisplayType = 'bad_option'
-    assert node.manualDisplayType != 'bad_option'
-
-def test_DigitalOutputNode_stateTableData():
-    good_xml = "[['state','gui_name', 'is_used'],[0, 'Off',False],[1, 'On',False]]"
-    malformed_xml = "[['state','gui_name', 'is_used'],[0, 'Off',False],[1, 'On',False']]"
-
-    node = DigitalOutputNode()
-    node.stateTableData = good_xml
-    assert node.stateTableData == ast.literal_eval(good_xml)
-    node.stateTableData = malformed_xml
-    assert node.stateTableData == ast.literal_eval(good_xml)
 
 
 
@@ -555,14 +405,6 @@ def test_DigitalOutputNode_stateTableData():
 def test_AnalogInputNode_typeInfo():
     node = AnalogInputNode()
     assert node.typeInfo() == strings.A_IN_NODE
-
-def test_AnalogInputNode_iconResource():
-    node = AnalogInputNode()
-    assert node.iconResource() == strings.TREE_ICON_A_IN_NODE
-
-def test_AnalogInputNode_stateTableModel():
-    node = AnalogInputNode()
-    assert type(node.stateTableModel()) == type(AnalogStateTableModel())
 
 def test_AnalogInputNode_calibrationTableModel():
     node = AnalogInputNode()
@@ -580,13 +422,13 @@ def test_AnalogInputNode_units():
 def test_AnalogInputNode_displayDigits():
     node = AnalogInputNode()
 
-    assert node.displayDigits == strings.A_IN_DISPLAY_DIGITS_DEFAULT
+    assert node.displayDigits == strings.A_DISPLAY_DIGITS_DEFAULT
 
     node.displayDigits = -1
     assert node.displayDigits == 0
 
     node.displayDigits = 9991
-    assert node.displayDigits == strings.A_IN_DISPLAY_DIGITS_MAX
+    assert node.displayDigits == strings.A_DISPLAY_DIGITS_MAX
 
 def test_AnalogInputNode_displayScientific():
     node = AnalogInputNode()
@@ -598,62 +440,67 @@ def test_AnalogInputNode_displayScientific():
     node.displayScientific = 'ham'
     assert node.displayScientific == False
 
-def test_AnalogInputNode_stateTableData():
-    node = AnalogInputNode()
-
-    good_xml      = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-    malformed_xml = "[['state','greater_than', 'gui_name'],['some', None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-
-    node.stateTableData = good_xml
-    assert node.stateTableData == ast.literal_eval(good_xml)
-    node.stateTableData = malformed_xml
-    assert node.stateTableData == ast.literal_eval(good_xml)
 
 def test_AnalogInputNode_calibrationTableData():
     node = AnalogInputNode()
-    good_xml      = "[['hal_value','gui_value'],[0.0,0.0],[ 1.0, 12.4],[2, 24.8]]"
-    malformed_xml = "[['hal_value','gui_value'],[0.0,0.0],[-1.0, 12.4],[2, 24.8]]"
 
-    node.calibrationTableData = good_xml
-    assert node.calibrationTableData == ast.literal_eval(good_xml)
-    node.calibrationTableData = malformed_xml
-    assert node.calibrationTableData == ast.literal_eval(good_xml)
+    good_cal = [['hal_value','gui_value'],[0.0,0.0],[ 1.0, 12.4],[2, 24.8]]
+    bad_cal  = [['hal_value','gui_value'],[0.0,0.0],[-1.0, 12.4],[2, 24.8]]
 
-def test_AnalogInputNode_states():
+    node.calibrationTableData = good_cal
+    assert node.calibrationTableData == good_cal
+
+    node.calibrationTableData = bad_cal
+    assert node.calibrationTableData == good_cal
+
+    node.setData(20, .12)
+    assert node.displayValue() == 1.488
+    assert node.data(21) == 1.488
+
+
+
+def test_AnalogInputNode_displayValue():
     node = AnalogInputNode()
-    xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-    node.stateTableData = xml_string
+    cal = [['hal_value','gui_value'],[0.0,0.0],[ 10.0, 500.0]]
+    node.calibrationTableData = cal
 
-    states = ['HiVac','Vac','Atmo']
-    assert node.states() == states
+    node.setData(20, 1.0)
+    assert node.displayValue() == 50
+    assert node.data(21) == 50
 
-def test_AnalogInputNode_numberOfStates():
-        node = AnalogInputNode()
+    node.setData(20, 1.5)
+    assert node.displayValue() == 75
+    assert node.data(21) == 75
 
-        xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-
-        node.stateTableData = xml_string
-
-        assert node.numberOfStates() == 3
-        assert node.stateTableData == ast.literal_eval(xml_string)
-
-        xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac']]"
-        node.stateTableData = xml_string
-        assert node.numberOfStates() == 2
-        assert node.stateTableData == ast.literal_eval(xml_string)
-
-#FIXME - need to revisit this whole enum thing...
-def test_AnalogInputNode_scaleType():
+def test_AnalogInputNode_displayToHal():
     node = AnalogInputNode()
+    cal = [['hal_value','gui_value'],[0.0,0.0],[ 10.0, 500.0]]
+    node.calibrationTableData = cal
 
-    for scale_type in strings.ANALOG_SCALE_TYPES.names:
-        #print(scale_type)
-        #print(strings.ANALOG_SCALE_TYPES.names.index(scale_type))
-        node.scaleType = scale_type
-        assert node.scaleType == scale_type
+    node.setData(20, 1.75)
 
-    node.scaleType = 'ham'
-    assert node.scaleType == scale_type
+    assert node.data(20) == 1.75
+    assert node.displayToHal(node.displayValue()) == 1.75
+
+
+def test_AnalogInputNode_setData():
+    node = AnalogInputNode()
+    cal = [['hal_value','gui_value'],[0.0,0.0],[ 10.0, 500.0]]
+    node.calibrationTableData = cal
+
+    node.setData(20, 1.5)
+    node.setData(21, "can't set this")
+    node.setData(22, 'mTorr')
+    node.setData(23, 5)
+    node.setData(24, True)
+    node.setData(25, "can't set this")
+
+    assert node.data(20) == 1.5
+    assert node.data(21) == 75
+    assert node.data(22) == 'mTorr'
+    assert node.data(23) == 5
+    assert node.data(24) == True
+    assert type(node.data(25)) == type(CalibrationTableModel())
 
 
 ########## AnalogOutputNode ##########
@@ -661,105 +508,82 @@ def test_AnalogOutputNode_typeInfo():
     node = AnalogOutputNode()
     assert node.typeInfo() == strings.A_OUT_NODE
 
-def test_AnalogOutputNode_iconResource():
-    node = AnalogOutputNode()
-    assert node.iconResource() == strings.TREE_ICON_A_OUT_NODE
 
-def test_AnalogOutputNode_stateTableModel():
-    node = AnalogOutputNode()
-    assert type(node.stateTableModel()) == type(AnalogStateTableModel())
+########## BoolVarNode ##########
+def test_BoolVarNode_typeInfo():
+    node = BoolVarNode()
+    assert node.typeInfo() == strings.BOOL_VAR_NODE
 
-def test_AnalogOutputNode_calibrationTableModel():
-    node = AnalogOutputNode()
-    assert type(node.calibrationTableModel()) == type(CalibrationTableModel())
+def test_BoolVarNode_setData():
+    node = BoolVarNode()
 
-def test_AnalogOutputNode_units():
-    node = AnalogOutputNode()
-    node.units = 'sccm'
-    assert node.units == 'sccm'
+    node.setData(10, True)
+    node.setData(13, True)
+    node.setData(14, True)
+    assert node.data(10) == True
+    assert node.data(13) == True
+    assert node.data(14) == True
 
-    node.units = 'Torr'
-    assert node.units == 'Torr'
+    node.setData(10, False)
+    node.setData(13, False)
+    node.setData(14, False)
+    assert node.data(10) == False
+    assert node.data(13) == False
+    assert node.data(14) == False
 
-def test_AnalogOutputNode_displayDigits():
-    node = AnalogOutputNode()
-    assert node.displayDigits == strings.A_OUT_DISPLAY_DIGITS_DEFAULT
+    node.setData(10, 'False')
+    node.setData(13, 'False')
+    node.setData(14, 'False')
+    assert node.data(10) == False
+    assert node.data(13) == False
+    assert node.data(14) == False
 
-    node.displayDigits = -1
-    assert node.displayDigits == 0
+    node.setData(11, 'OPEN')
+    node.setData(12, 'CLOSE')
+    assert node.data(11) == 'OPEN'
+    assert node.data(12) == 'CLOSE'
 
-    node.displayDigits = 9991
-    assert node.displayDigits == strings.A_OUT_DISPLAY_DIGITS_MAX
 
-def test_AnalogOutputNode_displayScientific():
-    node = AnalogOutputNode()
-    assert node.displayScientific == False
 
-    node.displayScientific = True
-    assert node.displayScientific == True
 
-    node.displayScientific = 'ham'
-    assert node.displayScientific == False
 
-def test_AnalogOutputNode_stateTableData():
-    node = AnalogOutputNode()
 
-    good_xml      = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-    malformed_xml = "[['state','greater_than', 'gui_name'],['some', None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
+########## FloatVarNode ##########
+def test_FloatVarNode_typeInfo():
+    node = FloatVarNode()
+    assert node.typeInfo() == strings.FLOAT_VAR_NODE
 
-    node.stateTableData = good_xml
-    assert node.stateTableData == ast.literal_eval(good_xml)
-    node.stateTableData = malformed_xml
-    assert node.stateTableData == ast.literal_eval(good_xml)
+def test_FloatVarNode_setData():
+    node = FloatVarNode()
+    node.min = -10.0
+    node.max = 10.0
 
-def test_AnalogOutputNode_calibrationTableData():
-    node = AnalogOutputNode()
-    good_xml      = "[['hal_value','gui_value'],[0.0,0.0],[ 1.0, 12.4],[2, 24.8]]"
-    malformed_xml = "[['hal_value','gui_value'],[0.0,0.0],[-1.0, 12.4],[2, 24.8]]"
+    assert node.min == -10.0
+    assert node.max == 10.0
 
-    node.calibrationTableData = good_xml
-    assert node.calibrationTableData == ast.literal_eval(good_xml)
-    node.calibrationTableData = malformed_xml
-    assert node.calibrationTableData == ast.literal_eval(good_xml)
+    node.setData(10, 1.234)
+    assert node.data(10) == 1.234
 
-def test_AnalogOutputNode_states():
-    node = AnalogOutputNode()
-    xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-    node.stateTableData = xml_string
+    node.setData(10, -991.234)
+    assert node.data(10) == -10.0
 
-    states = ['HiVac','Vac','Atmo']
-    assert node.states() == states
+    node.setData(10, 12.0)
+    assert node.data(10) == 10.0
 
-#FIXME - need to revisit this whole enum thing...
-def test_AnalogOutputNode_scaleType():
-    node = AnalogOutputNode()
-    for scale_type in strings.ANALOG_SCALE_TYPES.names:
-        node.scaleType = scale_type
-        assert node.scaleType == scale_type
+    #min
+    node.setData(11, -100.1)
+    assert node.data(11) == -100.1
 
-    node.scaleType = 'ham'
-    assert node.scaleType == scale_type
+    #max
+    node.setData(12, 100.1)
+    assert node.data(12) == 100.1
 
-#FIXME - need to revisit this whole enum thing...
-def test_AnalogOutputNode_manualDisplayType():
-    node = AnalogOutputNode()
-    for display_type in strings.ANALOG_MANUAL_DISPLAY_TYPES.names:
-        node.manualDisplayType = display_type
-        assert node.manualDisplayType == display_type
+    node.setData(10, 102)
+    assert node.data(10) == 100.1
 
-    node.manualDisplayType = 'ham'
-    assert node.manualDisplayType == display_type
+    #man_enable
+    node.setData(13, True)
+    assert node.data(13) == True
 
-def test_AnalogOutputNode_numberOfStates():
-    node = AnalogOutputNode()
-
-    xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac'],[2, 3.00, 'Atmo']]"
-    node.stateTableData = xml_string
-
-    assert node.numberOfStates() == 3
-    assert node.stateTableData == ast.literal_eval(xml_string)
-
-    xml_string = "[['state','greater_than', 'gui_name'],[0, None, 'HiVac'],[1, 2.00, 'Vac']]"
-    node.stateTableData = xml_string
-    assert node.numberOfStates() == 2
-    assert node.stateTableData == ast.literal_eval(xml_string)
+    node.setData(13, False)
+    assert node.data(13) == False

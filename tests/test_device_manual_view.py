@@ -15,13 +15,17 @@ from linuxnano.message_box import MessageBox
 def open_window(qtbot):
     def callback(window):
         widget = window()
+        widget.resize(400,400)
         qtbot.addWidget(widget)
+        widget.setWindowTitle(widget.__class__.__name__)
         widget.show()
         qtbot.wait_for_window_shown(widget)
         qtbot.wait(TestingFlags.TEST_WAIT_LONG)
         return widget
 
     return callback
+
+
 
 
 @pytest.fixture(params=['tests/tools/tool_model_1.xml'])

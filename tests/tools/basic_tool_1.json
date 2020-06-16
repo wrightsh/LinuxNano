@@ -1,0 +1,126 @@
+{
+    "children": [
+        {
+            "children": [
+                {
+                    "backgroundSVG": "/usr/local/linuxnano/resources/icons/unknown.svg",
+                    "children": [
+                        {
+                            "children": [
+                                {
+                                    "children": [],
+                                    "description": "",
+                                    "hasText": true,
+                                    "name": "Icon",
+                                    "rotation": 22.5,
+                                    "scale": 1.4,
+                                    "svg": "linuxnano/resources/icons/general/unknown.svg",
+                                    "fontSize": 12,
+                                    "textX": 0,
+                                    "textY": 0,
+                                    "type_info": "Device_Icon_Node",
+                                    "x": 50.0,
+                                    "y": 70.0
+                                },
+                                {
+                                    "children": [],
+                                    "description": "",
+                                    "displayValueOff": "Close",
+                                    "displayValueOn": "Open",
+                                    "halPin": "d_in_3",
+                                    "name": "is_closed",
+                                    "type_info": "Digital_Input_Node"
+                                },
+                                {
+                                    "children": [],
+                                    "description": "",
+                                    "displayValueOff": "down",
+                                    "displayValueOn": "up",
+                                    "halPin": "d_out_3",
+                                    "name": "Digital_Output_Node",
+                                    "type_info": "Digital_Output_Node"
+                                },
+                                {
+                                    "calibrationTableData": [
+                                        [
+                                            "hal_value",
+                                            "gui_value"
+                                        ],
+                                        [
+                                            0.0,
+                                            0.0
+                                        ],
+                                        [
+                                            1.0,
+                                            1.0
+                                        ]
+                                    ],
+                                    "children": [],
+                                    "description": "",
+                                    "displayDigits": 1,
+                                    "displayScientific": false,
+                                    "halPin": "a_in_3",
+                                    "name": "setpoint_return",
+                                    "type_info": "Analog_Input_Node",
+                                    "units": "sccm"
+                                },
+                                {
+                                    "calibrationTableData": [
+                                        [
+                                            "hal_value",
+                                            "gui_value"
+                                        ],
+                                        [
+                                            0.0,
+                                            0.0
+                                        ],
+                                        [
+                                            1.0,
+                                            100.0
+                                        ]
+                                    ],
+                                    "children": [],
+                                    "description": "",
+                                    "displayDigits": 2,
+                                    "displayScientific": false,
+                                    "halPin": "a_out_2",
+                                    "name": "Analog_Output_Node",
+                                    "type_info": "Analog_Output_Node",
+                                    "units": ""
+                                },
+                                {
+                                    "children": [],
+                                    "description": "",
+                                    "name": "Bool_Var_Node",
+                                    "offName": "Close",
+                                    "onName": "Open",
+                                    "type_info": "Bool_Var_Node"
+                                },
+                                {
+                                    "children": [],
+                                    "description": "",
+                                    "max": 10,
+                                    "min": -10,
+                                    "name": "Float_Var_Node",
+                                    "type_info": "Float_Var_Node"
+                                }
+                            ],
+                            "description": "",
+                            "name": "Pump",
+                            "type_info": "Device_Node"
+                        }
+                    ],
+                    "description": "",
+                    "name": "unknown",
+                    "type_info": "System_Node"
+                }
+            ],
+            "description": "",
+            "name": "unknown",
+            "type_info": "Tool_Node"
+        }
+    ],
+    "description": "",
+    "name": "unknown",
+    "type_info": "root"
+}

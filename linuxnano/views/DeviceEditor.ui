@@ -18,8 +18,17 @@
     <layout class="QGridLayout" name="gridLayout">
      <item row="0" column="0">
       <widget class="QLabel" name="label">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Status</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -39,33 +48,20 @@
     </layout>
    </item>
    <item>
-    <widget class="DeviceStateTableView" name="ui_device_state_table">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-     <property name="minimumSize">
+     <property name="sizeHint" stdset="0">
       <size>
-       <width>0</width>
-       <height>0</height>
+       <width>20</width>
+       <height>40</height>
       </size>
      </property>
-    </widget>
+    </spacer>
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>DeviceStateTableView</class>
-   <extends>QTableView</extends>
-   <header>linuxnano/views/widgets/device_state_table_view</header>
-  </customwidget>
- </customwidgets>
- <tabstops>
-  <tabstop>ui_status</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>
