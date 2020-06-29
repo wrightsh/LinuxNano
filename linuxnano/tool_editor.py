@@ -3,7 +3,6 @@
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import os
 
-from linuxnano.views.widgets.state_table_views import DigitalStateTableView
 from linuxnano.views.widgets.tool_tree_view import ToolTreeView
 from linuxnano.tool_model import LeafFilterProxyModel
 
@@ -28,7 +27,6 @@ tool_editor_base, tool_editor_form  = uic.loadUiType("linuxnano/views/ToolEditor
 
 class ToolEditor(tool_editor_base, tool_editor_form):
     def __init__(self, parent=None):
-    #def __init__(self, model, parent=None):
         super(tool_editor_base, self).__init__(parent)
         self.setupUi(self)
 
@@ -41,9 +39,11 @@ class ToolEditor(tool_editor_base, tool_editor_form):
                                    strings.DEVICE_NODE      : DeviceEditor(self),
                                    strings.DEVICE_ICON_NODE : DeviceIconEditor(self),
                                    strings.D_IN_NODE        : DigitalInputEditor(self),
-                                   strings.A_IN_NODE        : AnalogInputEditor(self),
                                    strings.D_OUT_NODE       : DigitalOutputEditor(self),
-                                   strings.A_OUT_NODE       : AnalogOutputEditor(self)}
+                                   strings.A_IN_NODE        : AnalogInputEditor(self),
+                                   strings.A_OUT_NODE       : AnalogOutputEditor(self),
+                                   strings.BOOL_VAR_NODE    : BoolVarEditor(self),
+                                   strings.FLOAT_VAR_NODE   : FloatVarEditor(self) }
 
         for editor in self._specific_editors.values():
             self.ui_specific_box.addWidget(editor)
@@ -109,8 +109,8 @@ class NodeEditor(node_base, node_form):
             model = model.sourceModel()
 
         self._data_mapper.setModel(model)
-        self._data_mapper.addMapping(self.ui_type       , 0)
-        self._data_mapper.addMapping(self.ui_name       , 1)
+        self._data_mapper.addMapping(self.ui_name       , 0)
+        self._data_mapper.addMapping(self.ui_type       , 1)
         self._data_mapper.addMapping(self.ui_description, 2)
 
 

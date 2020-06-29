@@ -6,10 +6,11 @@ import xml.etree.ElementTree as ET
 
 
 class DeviceIconWidget(QtSvg.QGraphicsSvgItem):
-    def __init__(self, renderer):
+    def __init__(self, renderer=None):
         super().__init__()
 
-        self.setSharedRenderer(renderer)
+        if renderer is not None:
+            self.setSharedRenderer(renderer)
         self.setAcceptHoverEvents(True)
         #self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
 

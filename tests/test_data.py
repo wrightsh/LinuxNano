@@ -173,12 +173,12 @@ def test_node_row():
 
 def test_node_setData():
     root = Node()
-    root.setData(0, "typeinfo is hard coded")
-    root.setData(1, "my_nam e") #It should remove the space
+    root.setData(0, "my_nam e") #It should remove the space
+    root.setData(1, "typeinfo is hard coded")
     root.setData(2, "my description")
 
-    assert root.data(0) == "root"
-    assert root.data(1) == "my_name"
+    assert root.data(0) == "my_name"
+    assert root.data(1) == "root"
     assert root.data(2) == "my description"
 
 
@@ -198,13 +198,13 @@ def test_SystemNode_typeInfo():
 
 def test_SystemNode_setData():
     node = SystemNode()
-    node.setData(0, "typeinfo is hard coded")
-    node.setData(1, "my_system_name")
+    node.setData(0, "my_system_name")
+    node.setData(1, "typeinfo is hard coded")
     node.setData(2, "my description")
     node.setData(10, strings.DEFAULT_SYSTEM_BACKGROUND)
 
-    assert node.data(0) == strings.SYSTEM_NODE
-    assert node.data(1) == "my_system_name"
+    assert node.data(0) == "my_system_name"
+    assert node.data(1) == strings.SYSTEM_NODE
     assert node.data(2) == "my description"
     assert node.data(10) == strings.DEFAULT_SYSTEM_BACKGROUND
 
@@ -298,8 +298,8 @@ def test_HalNode_typeInfo():
 def test_HalNode_setData():
     node = HalNode()
 
-    node.setData(10, 'new_pin_name')
-    assert node.data(10) == 'new_pin_name'
+    node.setData(10, 1)
+    assert node.data(10) == 1 #uses an index
 
 
 def test_HalNode_samplerStreamerIndex():

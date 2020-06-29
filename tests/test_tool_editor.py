@@ -62,10 +62,10 @@ def tool_model():
 
 
 
-def itest_ToolEditor(qtbot, open_window, tool_model):
+def test_ToolEditor(qtbot, open_window, tool_model):
     editor = open_window(ToolEditor)
-    editor.setWindowTitle("Tool Editor")
     editor.setModel(tool_model)
+    editor.resize(1000,600)
 
     if TestingFlags.ENABLE_MANUAL_TESTING:
         MessageBox("Tool Editor Testing")

@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from PyQt5 import QtCore, QtGui, QtXml, QtWidgets
 import sys
 
@@ -87,11 +90,8 @@ class Node:
         data = json.dumps(self, default=self.convertToDict,  sort_keys=True, indent=4)
         return data
 
-
-
     def typeInfo(self):
         return 'root'
-
 
     def parent(self):
         return self._parent
@@ -133,17 +133,20 @@ class Node:
     def row(self):
         if self._parent is not None:
             return self._parent._children.index(self)
+        else:
+            return 0
+
 
 
 
     def data(self, column):
-        if   column is 0: return self.typeInfo()
-        elif column is 1: return self.name
+        if   column is 0: return self.name
+        elif column is 1: return self.typeInfo()
         elif column is 2: return self.description
 
     def setData(self, column, value):
-        if   column is 0: pass
-        elif column is 1: self.name        = value
+        if   column is 0: self.name        = value
+        elif column is 1: pass
         elif column is 2: self.description = value
 
 
@@ -764,7 +767,8 @@ class AnalogInputNode(HalNode):
         elif column is 25: pass
 
     def displayValue(self):
-        return np.interp(self._hal_val, self._xp, self._yp)
+        print('data: ', np.interp(self._hal_val, self._xp, self._yp))
+        return float(np.interp(self._hal_val, self._xp, self._yp))
 
     def displayToHal(self, val):
         return np.interp(val, self._yp, self._xp)
@@ -850,6 +854,7 @@ class BoolVarNode(Node):
         self._off_enabled = True
         self._on_name = ''
         self._on_enabled = True
+        self._allow_manual = True
 
     def typeInfo(self):
         return strings.BOOL_VAR_NODE
@@ -861,6 +866,7 @@ class BoolVarNode(Node):
         elif column is 12: r = self.onName
         elif column is 13: r = self._off_enabled
         elif column is 14: r = self._on_enabled
+        elif column is 15: r = self.allowManual
         return r
 
     def setData(self, column, value):
@@ -873,6 +879,7 @@ class BoolVarNode(Node):
         elif column is 12: self.onName       = value
         elif column is 13: self._off_enabled = True if value == True else False
         elif column is 14: self._on_enabled  = True if value == True else False
+        elif column is 15: self.allowManual  = value
 
     def offName():
         def fget(self): return self._off_name
@@ -885,6 +892,17 @@ class BoolVarNode(Node):
         def fset(self, value): self._on_name = str(value)
         return locals()
     onName = property(**onName())
+
+    def allowManual():
+        def fget(self): return self._allow_manual
+        def fset(self, value):
+            if value == True or value == 'True':
+                self._allow_manual = True
+            else:
+                self._allow_manual = False
+
+        return locals()
+    allowManual = property(**allowManual())
 
 
 class FloatVarNode(Node):
