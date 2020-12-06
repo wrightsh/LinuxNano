@@ -6,7 +6,7 @@ import os
 from linuxnano.views.widgets.tool_tree_view import ToolTreeView
 from linuxnano.tool_model import LeafFilterProxyModel
 
-from linuxnano.strings import strings
+from linuxnano.strings import col, typ
 
 d_in_base,  d_in_form  = uic.loadUiType("linuxnano/views/DigitalInputEditor.ui")
 d_out_base, d_out_form = uic.loadUiType("linuxnano/views/DigitalOutputEditor.ui")
@@ -35,15 +35,15 @@ class ToolEditor(tool_editor_base, tool_editor_form):
         self.ui_common_box.addWidget(self._node_editor)
 
         #Only one of these is shown at a time
-        self._specific_editors = { strings.SYSTEM_NODE      : SystemEditor(self),
-                                   strings.DEVICE_NODE      : DeviceEditor(self),
-                                   strings.DEVICE_ICON_NODE : DeviceIconEditor(self),
-                                   strings.D_IN_NODE        : DigitalInputEditor(self),
-                                   strings.D_OUT_NODE       : DigitalOutputEditor(self),
-                                   strings.A_IN_NODE        : AnalogInputEditor(self),
-                                   strings.A_OUT_NODE       : AnalogOutputEditor(self),
-                                   strings.BOOL_VAR_NODE    : BoolVarEditor(self),
-                                   strings.FLOAT_VAR_NODE   : FloatVarEditor(self) }
+        self._specific_editors = { typ.SYSTEM_NODE      : SystemEditor(self),
+                                   typ.DEVICE_NODE      : DeviceEditor(self),
+                                   typ.DEVICE_ICON_NODE : DeviceIconEditor(self),
+                                   typ.D_IN_NODE        : DigitalInputEditor(self),
+                                   typ.D_OUT_NODE       : DigitalOutputEditor(self),
+                                   typ.A_IN_NODE        : AnalogInputEditor(self),
+                                   typ.A_OUT_NODE       : AnalogOutputEditor(self),
+                                   typ.BOOL_VAR_NODE    : BoolVarEditor(self),
+                                   typ.FLOAT_VAR_NODE   : FloatVarEditor(self) }
 
         for editor in self._specific_editors.values():
             self.ui_specific_box.addWidget(editor)
@@ -102,22 +102,22 @@ class NodeEditor(node_base, node_form):
     def __init__(self, parent=None):
         super(node_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
 
-        self._data_mapper.setModel(model)
-        self._data_mapper.addMapping(self.ui_name       , 0)
-        self._data_mapper.addMapping(self.ui_type       , 1)
-        self._data_mapper.addMapping(self.ui_description, 2)
+        self.mapper.setModel(model)
+        self.mapper.addMapping(self.ui_name       , col.NAME)
+        self.mapper.addMapping(self.ui_type       , col.TYPE_INFO)
+        self.mapper.addMapping(self.ui_description, col.DESCRIPTION)
 
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
 
 
 class SystemEditor(system_base, system_form):
@@ -126,10 +126,10 @@ class SystemEditor(system_base, system_form):
     def __init__(self, parent=None):
         super(system_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
         #Background SVG file selection
-        self.file_signal.connect(self._data_mapper.submit)
+        self.file_signal.connect(self.mapper.submit)
         self.ui_select_image.clicked.connect(self.selectSVG)
         self.ui_background_svg.textChanged.connect(lambda update_system_svg: self.ui_svg_widget.load(self.ui_background_svg.text()))
 
@@ -137,14 +137,14 @@ class SystemEditor(system_base, system_form):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
 
-        self._data_mapper.setModel(model)
-        self._data_mapper.addMapping(self.ui_background_svg, 10)
+        self.mapper.setModel(model)
+        self.mapper.addMapping(self.ui_background_svg, col.SVG)
 
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
 
 
     def selectSVG(self,sender):
@@ -165,19 +165,19 @@ class DeviceEditor(device_base, device_form):
     def __init__(self, parent=None):
         super(device_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
 
-        self._data_mapper.setModel(model)
-        self._data_mapper.addMapping(self.ui_status, 10)
+        self.mapper.setModel(model)
+        self.mapper.addMapping(self.ui_status, col.STATUS)
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
 
 
 class DeviceIconEditor(device_icon_base, device_icon_form):
@@ -186,9 +186,9 @@ class DeviceIconEditor(device_icon_base, device_icon_form):
     def __init__(self, parent=None):
         super(device_icon_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
-        self.file_signal.connect(self._data_mapper.submit)
+        self.file_signal.connect(self.mapper.submit)
         self.ui_select_image.clicked.connect(self.selectSVG)
         self.ui_svg.textChanged.connect(lambda update_system_svg: self.ui_svg_widget.load(self.ui_svg.text()))
         #self.ui_svg_widget.load(self.ui_svg.text())
@@ -197,23 +197,27 @@ class DeviceIconEditor(device_icon_base, device_icon_form):
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
-        self._data_mapper.setModel(model)
+        self.mapper.setModel(model)
 
-        self._data_mapper.addMapping(self.ui_svg      , 10)
-        #self._data_mapper.addMapping(self.ui_layer   , 11)
-        self._data_mapper.addMapping(self.ui_x        , 12)
-        self._data_mapper.addMapping(self.ui_y        , 13)
-        self._data_mapper.addMapping(self.ui_scale    , 14)
-        self._data_mapper.addMapping(self.ui_rotation , 15)
+        self.mapper.addMapping(self.ui_svg      , col.SVG)
+        #self_mapper.addMapping(self.ui_layer   , col.LAYER)
+        self.mapper.addMapping(self.ui_x        , col.X)
+        self.mapper.addMapping(self.ui_y        , col.Y)
+        self.mapper.addMapping(self.ui_scale    , col.SCALE)
+        self.mapper.addMapping(self.ui_rotation , col.ROTATION)
 
-        self._data_mapper.addMapping(self.ui_has_text , 16)
-        self._data_mapper.addMapping(self.ui_text     , 17)
-        self._data_mapper.addMapping(self.ui_text_x   , 18)
-        self._data_mapper.addMapping(self.ui_text_y   , 19)
-        self._data_mapper.addMapping(self.ui_font_size, 20)
+        self.mapper.addMapping(self.ui_has_text , col.HAS_TEXT)
+        self.mapper.addMapping(self.ui_text     , col.TEXT)
+        self.mapper.addMapping(self.ui_text_x   , col.TEXT_X)
+        self.mapper.addMapping(self.ui_text_y   , col.TEXT_Y)
+        self.mapper.addMapping(self.ui_font_size, col.FONT_SIZE)
 
 
     def setSelection(self, current):
+        parent = current.parent()
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
+
         #keep for reference
         #self.ui_icon_node_list.clear()
         #number_node_names = current.internalPointer().numberNodes()
@@ -225,9 +229,6 @@ class DeviceIconEditor(device_icon_base, device_icon_form):
         #if index >= 0:
         #    self.ui_icon_node_list.setCurrentIndex(index)
 
-        parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
 
 
     def selectSVG(self,sender):
@@ -248,24 +249,23 @@ class DigitalInputEditor(d_in_base, d_in_form):
     def __init__(self, parent=None):
         super(d_in_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
 
-        self._data_mapper.setModel(model)
-        self._data_mapper.addMapping(self.ui_hal_pin          , 10,  b"currentIndex") #index of the dropdown item
-        self._data_mapper.addMapping(self.ui_hal_pin_type     , 11)
-        self._data_mapper.addMapping(self.ui_value            , 20)
-        self._data_mapper.addMapping(self.ui_display_value    , 21)
-        self._data_mapper.addMapping(self.ui_display_value_off, 22)
-        self._data_mapper.addMapping(self.ui_display_value_on , 23)
+        self.mapper.setModel(model)
+        self.mapper.addMapping(self.ui_hal_pin      , col.HAL_PIN,  b"currentIndex") #index of the dropdown item
+        self.mapper.addMapping(self.ui_hal_pin_type , col.HAL_PIN_TYPE)
+        self.mapper.addMapping(self.ui_value        , col.VALUE)
+        self.mapper.addMapping(self.ui_off_name     , col.OFF_NAME)
+        self.mapper.addMapping(self.ui_on_name      , col.ON_NAME)
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
 
         self.ui_hal_pin.clear()
         pins = current.internalPointer().halPins()
@@ -281,24 +281,23 @@ class DigitalOutputEditor(d_out_base, d_out_form):
     def __init__(self, parent=None):
         super(d_out_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
 
-        self._data_mapper.setModel(model)
-        self._data_mapper.addMapping(self.ui_hal_pin          , 10,  b"currentIndex") #index of the dropdown item
-        self._data_mapper.addMapping(self.ui_hal_pin_type     , 11)
-        self._data_mapper.addMapping(self.ui_value            , 20)
-        self._data_mapper.addMapping(self.ui_display_value    , 21)
-        self._data_mapper.addMapping(self.ui_display_value_off, 22)
-        self._data_mapper.addMapping(self.ui_display_value_on , 23)
+        self.mapper.setModel(model)
+        self.mapper.addMapping(self.ui_hal_pin      , col.HAL_PIN,  b"currentIndex") #index of the dropdown item
+        self.mapper.addMapping(self.ui_hal_pin_type , col.HAL_PIN_TYPE)
+        self.mapper.addMapping(self.ui_value        , col.VALUE)
+        self.mapper.addMapping(self.ui_off_name     , col.OFF_NAME)
+        self.mapper.addMapping(self.ui_on_name      , col.ON_NAME)
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
 
         self.ui_hal_pin.clear()
         pins = current.internalPointer().halPins()
@@ -315,26 +314,26 @@ class AnalogInputEditor(a_in_base, a_in_form):
     def __init__(self, parent=None):
         super(a_in_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
-        self._data_mapper.setModel(model)
+        self.mapper.setModel(model)
 
-        self._data_mapper.addMapping(self.ui_hal_pin           , 10,  b"currentIndex") #index of the dropdown item
-        self._data_mapper.addMapping(self.ui_hal_pin_type      , 11)
-        self._data_mapper.addMapping(self.ui_hal_value         , 20)
-        self._data_mapper.addMapping(self.ui_display_value     , 21)
-        self._data_mapper.addMapping(self.ui_units             , 22)
-        self._data_mapper.addMapping(self.ui_display_digits    , 23)
-        self._data_mapper.addMapping(self.ui_display_scientific, 24)
-        self._data_mapper.addMapping(self.ui_calibration_table , 25,  b"calibrationTableView")
+        self.mapper.addMapping(self.ui_hal_pin           , col.HAL_PIN,  b"currentIndex") #index of the dropdown item
+        self.mapper.addMapping(self.ui_hal_pin_type      , col.HAL_PIN_TYPE)
+        self.mapper.addMapping(self.ui_hal_value         , col.HAL_VALUE)
+        self.mapper.addMapping(self.ui_value             , col.VALUE)
+        self.mapper.addMapping(self.ui_units             , col.UNITS)
+        self.mapper.addMapping(self.ui_display_digits    , col.DISPLAY_DIGITS)
+        self.mapper.addMapping(self.ui_display_scientific, col.DISPLAY_SCIENTIFIC)
+        self.mapper.addMapping(self.ui_calibration_table , col.CALIBRATION_TABLE_MODEL,  b"calibrationTableView")
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
 
         self.ui_hal_pin.clear()
         pins = current.internalPointer().halPins()
@@ -351,26 +350,26 @@ class AnalogOutputEditor(a_out_base, a_out_form):
     def __init__(self, parent=None):
         super(a_out_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
-        self._data_mapper.setModel(model)
+        self.mapper.setModel(model)
 
-        self._data_mapper.addMapping(self.ui_hal_pin           , 10,  b"currentIndex") #index of the dropdown item
-        self._data_mapper.addMapping(self.ui_hal_pin_type      , 11)
-        self._data_mapper.addMapping(self.ui_hal_value         , 20)
-        self._data_mapper.addMapping(self.ui_display_value     , 21)
-        self._data_mapper.addMapping(self.ui_units             , 22)
-        self._data_mapper.addMapping(self.ui_display_digits    , 23)
-        self._data_mapper.addMapping(self.ui_display_scientific, 24)
-        self._data_mapper.addMapping(self.ui_calibration_table , 25,  b"calibrationTableView")
+        self.mapper.addMapping(self.ui_hal_pin           , col.HAL_PIN,  b"currentIndex") #index of the dropdown item
+        self.mapper.addMapping(self.ui_hal_pin_type      , col.HAL_PIN_TYPE)
+        self.mapper.addMapping(self.ui_hal_value         , col.HAL_VALUE)
+        self.mapper.addMapping(self.ui_value             , col.VALUE)
+        self.mapper.addMapping(self.ui_units             , col.UNITS)
+        self.mapper.addMapping(self.ui_display_digits    , col.DISPLAY_DIGITS)
+        self.mapper.addMapping(self.ui_display_scientific, col.DISPLAY_SCIENTIFIC)
+        self.mapper.addMapping(self.ui_calibration_table , col.CALIBRATION_TABLE_MODEL,  b"calibrationTableView")
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
 
         self.ui_hal_pin.clear()
         pins = current.internalPointer().halPins()
@@ -388,42 +387,46 @@ class BoolVarEditor(bool_var_base, bool_var_form):
     def __init__(self, parent=None):
         super(bool_var_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
-        self._data_mapper.setModel(model)
+        self.mapper.setModel(model)
 
-        self._data_mapper.addMapping(self.ui_value     , 10)
-        self._data_mapper.addMapping(self.ui_off_name  , 11)
-        self._data_mapper.addMapping(self.ui_on_name   , 12)
-        self._data_mapper.addMapping(self.ui_off_enable, 13)
-        self._data_mapper.addMapping(self.ui_on_enable , 14)
+        self.mapper.addMapping(self.ui_value        , col.VALUE)
+        self.mapper.addMapping(self.ui_off_name     , col.OFF_NAME)
+        self.mapper.addMapping(self.ui_on_name      , col.ON_NAME)
+        self.mapper.addMapping(self.ui_enable_manual, col.ENABLE_MANUAL)
+        self.mapper.addMapping(self.ui_view_only    , col.VIEW_ONLY)
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)
 
 
 class FloatVarEditor(float_var_base, float_var_form):
     def __init__(self, parent=None):
         super(float_var_base, self).__init__(parent)
         self.setupUi(self)
-        self._data_mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):
             model = model.sourceModel()
-        self._data_mapper.setModel(model)
+        self.mapper.setModel(model)
 
-        self._data_mapper.addMapping(self.ui_value        , 10)
-        self._data_mapper.addMapping(self.ui_min          , 11)
-        self._data_mapper.addMapping(self.ui_max          , 12)
-        self._data_mapper.addMapping(self.ui_manual_enable, 13)
+        self.mapper.addMapping(self.ui_value             , col.VALUE)
+        self.mapper.addMapping(self.ui_min               , col.MIN)
+        self.mapper.addMapping(self.ui_max               , col.MAX)
+        self.mapper.addMapping(self.ui_units             , col.UNITS)
+        self.mapper.addMapping(self.ui_display_digits    , col.DISPLAY_DIGITS)
+        self.mapper.addMapping(self.ui_display_scientific, col.DISPLAY_SCIENTIFIC)
+        self.mapper.addMapping(self.ui_enable_manual     , col.ENABLE_MANUAL)
+        self.mapper.addMapping(self.ui_view_only         , col.VIEW_ONLY)
 
     def setSelection(self, current):
         parent = current.parent()
-        self._data_mapper.setRootIndex(parent)
-        self._data_mapper.setCurrentModelIndex(current)
+        self.mapper.setRootIndex(parent)
+        self.mapper.setCurrentModelIndex(current)

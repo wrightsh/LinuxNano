@@ -15,7 +15,7 @@ import os.path
 
 
 #from linuxnano.hardware import hardware
-from linuxnano.strings import strings
+from linuxnano.strings import strings, col
 from linuxnano.message_box import MessageBox
 from linuxnano.calibration_table_model import CalibrationTableModel
 
@@ -137,19 +137,15 @@ class Node:
             return 0
 
 
+    def data(self, c):
+        if   c is col.NAME: return self.name
+        elif c is col.TYPE_INFO: return self.typeInfo()
+        elif c is col.DESCRIPTION: return self.description
 
-
-    def data(self, column):
-        if   column is 0: return self.name
-        elif column is 1: return self.typeInfo()
-        elif column is 2: return self.description
-
-    def setData(self, column, value):
-        if   column is 0: self.name        = value
-        elif column is 1: pass
-        elif column is 2: self.description = value
-
-
+    def setData(self, c, value):
+        if   c is col.NAME: self.name = value
+        elif c is col.TYPE_INFO: pass
+        elif c is col.DESCRIPTION: self.description = value
 
     def name():
         def fget(self):
@@ -178,14 +174,11 @@ class Node:
         return locals()
     name = property(**name())
 
-
     def description():
         def fget(self): return self._description
         def fset(self, value): self._description = str(value)
         return locals()
     description = property(**description())
-
-
 
 
 class ToolNode(Node):
@@ -196,7 +189,6 @@ class ToolNode(Node):
         return strings.TOOL_NODE
 
 
-
 class SystemNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -205,17 +197,15 @@ class SystemNode(Node):
     def typeInfo(self):
         return strings.SYSTEM_NODE
 
+    def data(self, c):
+        r = super().data(c)
 
-    def data(self, column):
-        r = super().data(column)
-
-        if column is 10: r = self.backgroundSVG
+        if c is col.BACKGROUND_SVG: r = self.backgroundSVG
         return r
 
-    def setData(self, column, value):
-        super().setData(column, value)
-
-        if column is 10: self.backgroundSVG = value
+    def setData(self, c, value):
+        super().setData(c, value)
+        if c is col.BACKGROUND_SVG: self.backgroundSVG = value
 
     def backgroundSVG():
         def fget(self): return self._background_svg
@@ -257,16 +247,14 @@ class DeviceNode(Node):
     def typeInfo(self):
         return strings.DEVICE_NODE
 
-    def data(self, column):
-        r = super().data(column)
-
-        if column is 10: r =  self._status
+    def data(self, c):
+        r = super().data(c)
+        if c is col.STATUS: r =  self._status
         return r
 
-    def setData(self, column, value):
-        super().setData(column, value)
-
-        if column is 10: self._status = str(value)
+    def setData(self, c, value):
+        super().setData(c, value)
+        if c is col.STATUS: self._status = str(value)
 
 
     ''' TODO: remove???'''
@@ -281,21 +269,6 @@ class DeviceNode(Node):
 
     def setDirty(self, value):
         self._is_dirty = True if value else False
-
-
-
-    #def stateFromChildren(self):
-    #    #returns the current state of the device
-    #    #first reads all child nodes then lookups state in DeviceStateTable
-    #    state = 0
-    #    bit_weight = 1
-
-    #    for child in self._children:
-    #        if child.typeInfo() in [strings.D_IN_NODE, strings.D_OUT_NODE, strings.A_IN_NODE, strings.A_OUT_NODE]:
-    #            state += bit_weight * child.state()
-    #            bit_weight *=  len(child.states)
-
-    #    return state
 
     #def iconLayer(self):
         #this returns the current icon layer
@@ -314,22 +287,6 @@ class DeviceNode(Node):
 
     #    model = self.deviceStateTableModel()
     #    model.setNodeStates(states)
-
-
-
-    #def deviceStates():
-    #    def fget(self):
-    #        return self.deviceStateTableModel().deviceStates()
-
-    #    def fset(self, value):
-    #        try:
-    #            my_arr = ast.literal_eval(value)
-    #            self.deviceStateTableModel().setDeviceStates(my_arr)
-    #        except Exception as e:
-    #            MessageBox("Malformed device state table data", e, value)
-
-    #    return locals()
-    #deviceStates = property(**deviceStates())
 
 
 
@@ -361,41 +318,39 @@ class DeviceIconNode(Node):
     def typeInfo(self):
         return strings.DEVICE_ICON_NODE
 
-    def data(self, column):
-        r = super().data(column)
+    def data(self, c):
+        r = super().data(c)
 
-        if   column is 10: r = self.svg
-        elif column is 11: r = self.layer()
-        elif column is 12: r = self.x
-        elif column is 13: r = self.y
-        elif column is 14: r = self.scale
-        elif column is 15: r = self.rotation
+        if   c is col.SVG      : r = self.svg
+        elif c is col.LAYER    : r = self.layer()
+        elif c is col.X        : r = self.x
+        elif c is col.Y        : r = self.y
+        elif c is col.SCALE    : r = self.scale
+        elif c is col.ROTATION : r = self.rotation
 
-        elif column is 16: r = self.hasText
-        elif column is 17: r = self._text
-        elif column is 18: r = self.textX
-        elif column is 19: r = self.textY
-        elif column is 20: r = self.fontSize
-
+        elif c is col.HAS_TEXT : r = self.hasText
+        elif c is col.TEXT     : r = self._text
+        elif c is col.TEXT_X   : r = self.textX
+        elif c is col.TEXT_Y   : r = self.textY
+        elif c is col.FONT_SIZE: r = self.fontSize
 
         return r
 
+    def setData(self, c, value):
+        super().setData(c, value)
 
-    def setData(self, column, value):
-        super().setData(column, value)
+        if   c is col.SVG       : self.svg      = value
+        elif c is col.LAYER     : self._layer   = value
+        elif c is col.X         : self.x        = value
+        elif c is col.Y         : self.y        = value
+        elif c is col.SCALE     : self.scale    = value
+        elif c is col.ROTATION  : self.rotation = value
 
-        if   column is 10: self.svg          = value
-        elif column is 11: self._layer       = value
-        elif column is 12: self.x            = value
-        elif column is 13: self.y            = value
-        elif column is 14: self.scale        = value
-        elif column is 15: self.rotation     = value
-
-        elif column is 16: self.hasText      = value
-        elif column is 17: self._text        = str(value)
-        elif column is 18: self.textX        = value
-        elif column is 19: self.textY        = value
-        elif column is 20: self.fontSize = value
+        elif c is col.HAS_TEXT  : self.hasText  = value
+        elif c is col.TEXT      : self._text    = str(value)
+        elif c is col.TEXT_X    : self.textX    = value
+        elif c is col.TEXT_Y    : self.textY    = value
+        elif c is col.FONT_SIZE : self.fontSize = value
 
     def layer(self):
         if self._layer in self.layers().names:
@@ -487,8 +442,6 @@ class DeviceIconNode(Node):
 
 
     ''''Saving the number node code for now because it was werid to make with the enum:'''
-
-
     #def numberNode():
     #    '''Stores the name of the analog node for graphic display'''
     #    def fget(self):
@@ -500,8 +453,6 @@ class DeviceIconNode(Node):
     #            self._number_node = 'None'
     #    return locals()
     #numberNode = property(**numberNode())
-
-
     #elif column is 18:
     #    try:
     #        r = self.numberNodes().names.index(self._number_node)  #connected to a QComboBox which passes an index
@@ -510,7 +461,6 @@ class DeviceIconNode(Node):
     #        r = self.numberNodes().names.index(self._number_node)
 
     #elif column is 18: self.numberNode          = self.numberNodes().names[value] #Connected to a QComboBox so we use an index
-
 
     #def numberNodes(self):
     #    '''Returns enum of nodes available for graphic display'''
@@ -521,8 +471,6 @@ class DeviceIconNode(Node):
     #            node_names.append(child.name)
 
     #    return enum(node_names)
-
-
 
 
 
@@ -540,7 +488,6 @@ class HalNode(Node):
         self._hal_pin = ''
         self._hal_pin_type = None
 
-
         #not sure on these
         self._sampler_index = None
         self._streamer_index = None
@@ -550,26 +497,27 @@ class HalNode(Node):
     def typeInfo(self):
         raise NotImplementedError("Nodes that inherit HalNode must implement typeInfo")
 
-    def data(self, column):
-        r = super().data(column)
-        if column is 10:
+    def data(self, c):
+        r = super().data(c)
+        if c is col.HAL_PIN:
             try:
                 r = self.halPins().names.index(self._hal_pin) #Connected to a QComboBox which passes an index
             except:
                 self.halPin = ''
                 r = ''
-        elif column is 11: r = self._hal_pin_type
+        elif c is col.HAL_PIN_TYPE: r = self._hal_pin_type
 
         return r
 
-    def setData(self, column, value):
-        super().setData(column, value)
-        if   column is 10:
+    def setData(self, c, value):
+        super().setData(c, value)
+
+        if c is col.HAL_PIN:
             try:
                 self.halPin = self.halPins().names[value] #Connected to a QComboBox so we use an index
             except:
                 self.halPin = ''
-        elif column is 11: pass
+        elif c is col.HAL_PIN_TYPE: pass
 
     def signalName(self):
         return self.parent().parent().name + '.' + self.parent().name + '.' + self.name + '.'
@@ -596,7 +544,6 @@ class HalNode(Node):
     def manualQueuePut(self, value):
         self._manual_queue.put_nowait(value)
 
-
     def halPin():
         def fget(self): return self._hal_pin
         def fset(self, value):
@@ -610,34 +557,12 @@ class HalNode(Node):
         return locals()
     halPin = property(**halPin())
 
-
-
-
-
     #def signals(self):
     #    signals = []
     #    base_name = self.parent().parent().name + '.' + self.parent().name + '.' + self.name + '.'
-
     #    for i, item in enumerate(self.halPins):
     #        signals.append(base_name + str(i))
-
     #    return signals
-
-    #def states():
-    #    def fget(self):
-    #        return self.stateTableModel().states()
-
-    #    def fset(self, value):
-    #        try:
-    #            value = ast.literal_eval(value)
-    #            self.stateTableModel().setNumberOfBits(int(math.log(len(value),2)))
-    #            self.stateTableModel().setStates(value)
-    #            self.stateTableChanged()
-    #        except Exception as e:
-    #            MessageBox("Malformed states data\nExpected: states=['state_1','state_2'] \nReceived:", e, value)
-
-    #    return locals()
-    #states = property(**states())
 
 
 class DigitalInputNode(HalNode):
@@ -646,30 +571,32 @@ class DigitalInputNode(HalNode):
 
         self._name = 'Digital_Input_Node'
         self._val = False
-        self._display_val_off = ''
-        self._display_val_on = ''
+        self._off_name = ''
+        self._on_name = ''
 
     def typeInfo(self):
         return strings.D_IN_NODE
 
-    def data(self, column):
-        r = super().data(column)
-        if   column is 20: r = self._val
-        elif column is 21: r = self.displayValue()
-        elif column is 22: r = self.displayValueOff
-        elif column is 23: r = self.displayValueOn
+    def data(self, c):
+        r = super().data(c)
+        if   c is col.VALUE    : r = self._val
+        elif c is col.OFF_NAME : r = self.offName
+        elif c is col.ON_NAME  : r = self.onName
+
         return r
 
-    def setData(self, column, value):
-        super().setData(column, value)
-        if   column is 20: self._val = True if value else False
-        elif column is 21: pass
-        elif column is 22: self.displayValueOff = value
-        elif column is 23: self.displayValueOn = value
+    def setData(self, c, value):
+        super().setData(c, value)
+        if c is col.VALUE:
+            self._val = True if value == True else False
+            if self.parent():
+                self.parent().setDirty(True)
 
+        elif c is col.OFF_NAME : self.offName = value
+        elif c is col.ON_NAME  : self.onName  = value
 
-    def displayValue(self):
-        return self._display_val_on if self._val else self._display_val_off
+    def value(self):
+        return self._val
 
     def halPins(self):
         all_pins = HalNode.hal_pins #list of (name, type, dir)
@@ -678,19 +605,17 @@ class DigitalInputNode(HalNode):
         pins.insert(0, '')
         return enum(pins)
 
-
-    def displayValueOff():
-        def fget(self): return self._display_val_off
-        def fset(self,value): self._display_val_off = str(value)
+    def offName():
+        def fget(self): return self._off_name
+        def fset(self,value): self._off_name = str(value)
         return locals()
-    displayValueOff = property(**displayValueOff())
+    offName = property(**offName())
 
-    def displayValueOn():
-        def fget(self): return self._display_val_on
-        def fset(self,value): self._display_val_on = str(value)
+    def onName():
+        def fget(self): return self._on_name
+        def fset(self,value): self._on_name = str(value)
         return locals()
-    displayValueOn = property(**displayValueOn())
-
+    onName = property(**onName())
 
 
 class DigitalOutputNode(DigitalInputNode):
@@ -724,7 +649,7 @@ class AnalogInputNode(HalNode):
         self._name = 'Analog_Input_Node'
 
         self._hal_val = 0
-        self._display_val = 0
+        self._val = 0
         self._units = ''
 
         self._display_digits = strings.A_DISPLAY_DIGITS_DEFAULT
@@ -744,30 +669,29 @@ class AnalogInputNode(HalNode):
     def calibrationTableModel(self):
         return self._calibration_table_model
 
-    def data(self, column):
-        r = super().data(column)
+    def data(self, c):
+        r = super().data(c)
 
-        if   column is 20: r = self._hal_val
-        elif column is 21: r = self.displayValue()
-        elif column is 22: r = self.units
-        elif column is 23: r = self.displayDigits
-        elif column is 24: r = self.displayScientific
-        elif column is 25: r = self._calibration_table_model
+        if   c is col.HAL_VALUE               : r = self._hal_val
+        elif c is col.VALUE                   : r = self.value()
+        elif c is col.UNITS                   : r = self.units
+        elif c is col.DISPLAY_DIGITS          : r = self.displayDigits
+        elif c is col.DISPLAY_SCIENTIFIC      : r = self.displayScientific
+        elif c is col.CALIBRATION_TABLE_MODEL : r = self._calibration_table_model
 
         return r
 
-    def setData(self, column, value):
-        super().setData(column, value)
+    def setData(self, c, value):
+        super().setData(c, value)
 
-        if   column is 20: self._hal_val          = value
-        elif column is 21: pass
-        elif column is 22: self.units             = value
-        elif column is 23: self.displayDigits     = value
-        elif column is 24: self.displayScientific = value
-        elif column is 25: pass
+        if   c is col.HAL_VALUE          : self._hal_val = value
+        elif c is col.VALUE              : pass
+        elif c is col.UNITS              : self.units = value
+        elif c is col.DISPLAY_DIGITS     : self.displayDigits = value
+        elif c is col.DISPLAY_SCIENTIFIC : self.displayScientific = value
+        elif c is 25: pass
 
-    def displayValue(self):
-        print('data: ', np.interp(self._hal_val, self._xp, self._yp))
+    def value(self):
         return float(np.interp(self._hal_val, self._xp, self._yp))
 
     def displayToHal(self, val):
@@ -847,39 +771,43 @@ class AnalogOutputNode(AnalogInputNode):
 class BoolVarNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
+
         self._name = 'Bool_Var_Node'
         self._val = False
 
         self._off_name = ''
-        self._off_enabled = True
         self._on_name = ''
-        self._on_enabled = True
-        self._allow_manual = True
+        self._enable_manual = True
+        self._view_only = True
 
     def typeInfo(self):
         return strings.BOOL_VAR_NODE
 
-    def data(self, column):
-        r = super().data(column)
-        if   column is 10: r = self._val
-        elif column is 11: r = self.offName
-        elif column is 12: r = self.onName
-        elif column is 13: r = self._off_enabled
-        elif column is 14: r = self._on_enabled
-        elif column is 15: r = self.allowManual
+    def data(self, c):
+        r = super().data(c)
+
+        if   c is col.VALUE         : r = self._val
+        elif c is col.OFF_NAME      : r = self.offName
+        elif c is col.ON_NAME       : r = self.onName
+        elif c is col.ENABLE_MANUAL : r = self.enableManual
+        elif c is col.VIEW_ONLY     : r = self.viewOnly
+
         return r
 
-    def setData(self, column, value):
-        super().setData(column, value)
-        if   column is 10:
+    def setData(self, c, value):
+        super().setData(c, value)
+        if c is col.VALUE:
             self._val = True if value == True else False
             if self.parent():
                 self.parent().setDirty(True)
-        elif column is 11: self.offName      = value
-        elif column is 12: self.onName       = value
-        elif column is 13: self._off_enabled = True if value == True else False
-        elif column is 14: self._on_enabled  = True if value == True else False
-        elif column is 15: self.allowManual  = value
+
+        elif c is col.OFF_NAME      : self.offName      = value
+        elif c is col.ON_NAME       : self.onName       = value
+        elif c is col.ENABLE_MANUAL : self.enableManual = value
+        elif c is col.VIEW_ONLY     : self.viewOnly     = value
+
+    def value(self):
+        return self._val
 
     def offName():
         def fget(self): return self._off_name
@@ -893,16 +821,27 @@ class BoolVarNode(Node):
         return locals()
     onName = property(**onName())
 
-    def allowManual():
-        def fget(self): return self._allow_manual
+    def enableManual():
+        def fget(self): return self._enable_manual
         def fset(self, value):
             if value == True or value == 'True':
-                self._allow_manual = True
+                self._enable_manual = True
             else:
-                self._allow_manual = False
+                self._enable_manual = False
 
         return locals()
-    allowManual = property(**allowManual())
+    enableManual = property(**enableManual())
+
+    def viewOnly():
+        def fget(self): return self._view_only
+        def fset(self, value):
+            if value == True or value == 'True':
+                self._view_only = True
+            else:
+                self._view_only = False
+
+        return locals()
+    viewOnly = property(**viewOnly())
 
 
 class FloatVarNode(Node):
@@ -912,28 +851,44 @@ class FloatVarNode(Node):
         self._val = 0
         self._min = 0
         self._max = 0
-        self._man_enable = True
+        self._units = ''
+        self._display_digits = strings.A_DISPLAY_DIGITS_DEFAULT
+        self._display_scientific = False
+        self._enable_manual = True
+        self._view_only = True
 
     def typeInfo(self):
         return strings.FLOAT_VAR_NODE
 
-    def data(self, column):
-        r = super().data(column)
-        if   column is 10: r = self._val
-        elif column is 11: r = self.min
-        elif column is 12: r = self.max
-        elif column is 13: r = self._man_enable
+    def data(self, c):
+        r = super().data(c)
+        if   c is col.VALUE              : r = self._val
+        elif c is col.MIN                : r = self.min
+        elif c is col.MAX                : r = self.max
+        elif c is col.UNITS              : r = self.units
+        elif c is col.DISPLAY_DIGITS     : r = self.displayDigits
+        elif c is col.DISPLAY_SCIENTIFIC : r = self.displayScientific
+        elif c is col.ENABLE_MANUAL      : r = self.enableManual
+        elif c is col.VIEW_ONLY          : r = self.viewOnly
         return r
 
-    def setData(self, column, value):
-        super().setData(column, value)
-        if   column is 10:
+
+    def setData(self, c, value):
+        super().setData(c, value)
+        if c is col.VALUE:
             self._val = clamp(float(value), self.min, self.max)
             if self.parent():
                 self.parent().setDirty(True)
-        elif column is 11: self.min = value
-        elif column is 12: self.max = value
-        elif column is 13: self._man_enable = True if value == True else False
+        elif c is col.MIN                : self.min = value
+        elif c is col.MAX                : self.max = value
+        elif c is col.UNITS              : self.units = value
+        elif c is col.DISPLAY_DIGITS     : self.displayDigits = value
+        elif c is col.DISPLAY_SCIENTIFIC : self.displayScientific = value
+        elif c is col.ENABLE_MANUAL      : self.enableManual = value
+        elif c is col.VIEW_ONLY          : self.viewOnly = value
+
+    def value(self):
+        return self._val
 
     def min():
         def fget(self): return self._min
@@ -946,3 +901,49 @@ class FloatVarNode(Node):
         def fset(self, value): self._max = float(value)
         return locals()
     max = property(**max())
+
+    def units():
+        def fget(self): return self._units
+        def fset(self, value): self._units = str(value)
+        return locals()
+    units = property(**units())
+
+    def displayDigits():
+        def fget(self): return self._display_digits
+        def fset(self, value):
+            self._display_digits = clamp(int(value), 0, strings.A_DISPLAY_DIGITS_MAX)
+        return locals()
+    displayDigits = property(**displayDigits())
+
+    def displayScientific():
+        def fget(self): return self._display_scientific
+        def fset(self, value):
+            if value == True or value == 'True':
+                self._display_scientific = True
+            else:
+                self._display_scientific = False
+
+        return locals()
+    displayScientific = property(**displayScientific())
+
+    def enableManual():
+        def fget(self): return self._enable_manual
+        def fset(self, value):
+            if value == True or value == 'True':
+                self._enable_manual = True
+            else:
+                self._enable_manual = False
+
+        return locals()
+    enableManual = property(**enableManual())
+
+    def viewOnly():
+        def fget(self): return self._view_only
+        def fset(self, value):
+            if value == True or value == 'True':
+                self._view_only = True
+            else:
+                self._view_only = False
+
+        return locals()
+    viewOnly = property(**viewOnly())

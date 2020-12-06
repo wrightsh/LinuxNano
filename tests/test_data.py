@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from linuxnano.flags import TestingFlags
-from linuxnano.strings import strings
+from linuxnano.strings import strings, col, typ
 
 from linuxnano.data import Node, ToolNode, SystemNode, DeviceNode, DeviceIconNode, HalNode, DigitalInputNode, DigitalOutputNode, AnalogInputNode, AnalogOutputNode
 from linuxnano.data import BoolVarNode, FloatVarNode
@@ -165,7 +165,7 @@ def test_node_row():
     root.addChild(child_2)
     root.addChild(child_3)
 
-    assert root.row()    == None
+    assert root.row()    == 0 #FIXME Not sure if we should test this to be 0 or None
     assert child_1.row() == 0
     assert child_2.row() == 1
     assert child_3.row() == 2
@@ -173,13 +173,13 @@ def test_node_row():
 
 def test_node_setData():
     root = Node()
-    root.setData(0, "my_nam e") #It should remove the space
-    root.setData(1, "typeinfo is hard coded")
-    root.setData(2, "my description")
+    root.setData(col.NAME, "my_nam e") #It should remove the space
+    root.setData(col.TYPE_INFO, "typeinfo is hard coded")
+    root.setData(col.DESCRIPTION, "my description")
 
-    assert root.data(0) == "my_name"
-    assert root.data(1) == "root"
-    assert root.data(2) == "my description"
+    assert root.data(col.NAME) == "my_name"
+    assert root.data(col.TYPE_INFO) == "root"
+    assert root.data(col.DESCRIPTION) == "my description"
 
 
 
@@ -187,26 +187,28 @@ def test_node_setData():
 ########## ToolNode ##########
 def test_ToolNode_typeInfo():
     tool  = ToolNode()
-    assert tool.typeInfo() == strings.TOOL_NODE
+    assert tool.typeInfo() == typ.TOOL_NODE
 
 
 ########## SystemNode ##########
 def test_SystemNode_typeInfo():
     system  = SystemNode()
-    assert system.typeInfo() == strings.SYSTEM_NODE
+    assert system.typeInfo() == typ.SYSTEM_NODE
 
 
 def test_SystemNode_setData():
     node = SystemNode()
-    node.setData(0, "my_system_name")
-    node.setData(1, "typeinfo is hard coded")
-    node.setData(2, "my description")
-    node.setData(10, strings.DEFAULT_SYSTEM_BACKGROUND)
+    node.setData(col.NAME, "my_system_name")
+    assert node.data(col.NAME) == "my_system_name"
 
-    assert node.data(0) == "my_system_name"
-    assert node.data(1) == strings.SYSTEM_NODE
-    assert node.data(2) == "my description"
-    assert node.data(10) == strings.DEFAULT_SYSTEM_BACKGROUND
+    node.setData(col.TYPE_INFO, "typeinfo is hard coded")
+    assert node.data(col.TYPE_INFO) == typ.SYSTEM_NODE
+
+    node.setData(col.DESCRIPTION, "my description")
+    assert node.data(col.DESCRIPTION) == "my description"
+
+    node.setData(col.BACKGROUND_SVG, strings.DEFAULT_SYSTEM_BACKGROUND)
+    assert node.data(col.BACKGROUND_SVG) == strings.DEFAULT_SYSTEM_BACKGROUND
 
 def test_SystemNode_backgroundSVG():
     node = SystemNode()
@@ -220,20 +222,20 @@ def test_SystemNode_backgroundSVG():
 ########## DeviceNode ##########
 def test_DeviceNode_typeInfo():
     device  = DeviceNode()
-    assert device.typeInfo() == strings.DEVICE_NODE
+    assert device.typeInfo() == typ.DEVICE_NODE
 
 def test_DeviceNode_setData():
     device  = DeviceNode()
 
     new_status = 'The devices behavior tree will set the status.'
-    current_status = device.data(10)
-    device.setData(10, new_status)
-    assert device.data(10) == new_status
+    current_status = device.data(col.STATUS)
+    device.setData(col.STATUS, new_status)
+    assert device.data(col.STATUS) == new_status
 
-def test_DeviceNode_iconLayerList():
+def old_test_DeviceNode_iconLayerList():
     device = DeviceNode()
     icon_node = DeviceIconNode()
-    icon_node.setData(10, 'linuxnano/resources/icons/valves/valve.svg')
+    icon_node.setData(col.SVG, 'linuxnano/resources/icons/valves/valve.svg')
 
     device.addChild(icon_node)
 
@@ -244,47 +246,45 @@ def test_DeviceNode_iconLayerList():
 ########## DeviceIconNode ##########
 def test_DeviceIconNode_typeInfo():
     node = DeviceIconNode()
-    assert node.typeInfo() == strings.DEVICE_ICON_NODE
+    assert node.typeInfo() == typ.DEVICE_ICON_NODE
 
 def test_DeviceIconNode_setData():
     device  = DeviceNode()
     node = DeviceIconNode()
     device.addChild(node)
 
-    node.setData(10, 'linuxnano/resources/icons/valves/valve.svg') #svg
-    node.setData(11, 'closing') #svg layer
-    node.setData(12, 51) #x
-    node.setData(13, 57) #y
-    node.setData(14, 1.12) #scale
-    node.setData(15, 90) #rotation
+    node.setData(col.SVG, 'linuxnano/resources/icons/valves/valve.svg')
+    node.setData(col.LAYER, 'closing')
+    node.setData(col.X, 51)
+    node.setData(col.Y, 57)
+    node.setData(col.SCALE, 1.12)
+    node.setData(col.ROTATION, 90)
 
-    node.setData(16, True) #hasText
-    node.setData(17, 'a word') #text
-    node.setData(18, 63) #textX
-    node.setData(19, 60) #textY
-    node.setData(20, 18) #textFontSize
+    node.setData(col.HAS_TEXT, True)
+    node.setData(col.TEXT, 'a word')
+    node.setData(col.TEXT_X, 63)
+    node.setData(col.TEXT_Y, 60)
+    node.setData(col.FONT_SIZE, 18)
 
-    assert node.data(10) == 'linuxnano/resources/icons/valves/valve.svg'
-    assert node.data(11) == 'closing'
-    assert node.data(12) == 51
-    assert node.data(13) == 57
-    assert node.data(14) == 1.12
-    assert node.data(15) == 90
+    assert node.data(col.SVG) == 'linuxnano/resources/icons/valves/valve.svg'
+    assert node.data(col.LAYER) == 'closing'
+    assert node.data(col.X) == 51
+    assert node.data(col.Y) == 57
+    assert node.data(col.SCALE) == 1.12
+    assert node.data(col.ROTATION) == 90
 
-    assert node.data(16) == True
-    assert node.data(17) == 'a word'
-    assert node.data(18) == 63
-    assert node.data(19) == 60
-    assert node.data(20) == 18
+    assert node.data(col.HAS_TEXT) == True
+    assert node.data(col.TEXT) == 'a word'
+    assert node.data(col.TEXT_X) == 63
+    assert node.data(col.TEXT_Y) == 60
+    assert node.data(col.FONT_SIZE) == 18
 
 
 def test_DeviceIconNode_layers():
     node = DeviceIconNode()
-    node.setData(10, 'linuxnano/resources/icons/valves/valve.svg')
+    node.setData(col.SVG, 'linuxnano/resources/icons/valves/valve.svg')
 
     assert node.layers().names == ['closed', 'closing', 'open', 'opening', 'fault']
-
-
 
 
 ########## HalNode ##########
@@ -294,12 +294,6 @@ def test_HalNode_typeInfo():
     node = HalNode()
     with pytest.raises(Exception) as e_info:
         node.typeInfo()
-
-def test_HalNode_setData():
-    node = HalNode()
-
-    node.setData(10, 1)
-    assert node.data(10) == 1 #uses an index
 
 
 def test_HalNode_samplerStreamerIndex():
@@ -355,56 +349,88 @@ def test_DigitalInputNode_name():
 
 def test_DigitalInputNode_typeInfo():
     node = DigitalInputNode()
-    assert node.typeInfo() == strings.D_IN_NODE
+    assert node.typeInfo() == typ.D_IN_NODE
 
-def test_DigitalInputNode_displayValue():
+def test_DigitalInputNode_value():
     node = DigitalInputNode()
 
-    node.displayValueOff = 'down'
-    assert node.displayValueOff == 'down'
+    node.offName = 'down'
+    assert node.offName == 'down'
 
-    node.displayValueOn = 'up'
-    assert node.displayValueOn == 'up'
+    node.onName = 'up'
+    assert node.onName == 'up'
 
-    node.setData(20, False)
-    assert node.data(20) == False
-    assert node.data(21) == 'down'
+    node.setData(col.VALUE, False)
+    assert node.data(col.VALUE) == False
 
-    node.setData(20, True)
-    assert node.data(20) == True
-    assert node.data(21) == 'up'
+    node.setData(col.VALUE, True)
+    assert node.data(col.VALUE) == True
 
+
+def test_DigitalInputNode_setData():
+    HalNode.hal_pins.append(('d_in_1', 'bit', 'OUT'))
+    HalNode.hal_pins.append(('d_in_2', 'bit', 'OUT'))
+    HalNode.hal_pins.append(('d_out_1', 'bit', 'IN'))
+    HalNode.hal_pins.append(('d_out_2', 'bit', 'IN'))
+
+    node = DigitalInputNode()
+
+    node.setData(col.HAL_PIN, 2)
+    assert node.data(col.HAL_PIN) == 2 #uses an index
+    assert node.data(col.HAL_PIN_TYPE) == 'bit'
+
+    node.setData(col.HAL_PIN, 1)
+    assert node.data(col.HAL_PIN) == 1 #uses an index
+    assert node.data(col.HAL_PIN_TYPE) == 'bit'
+
+    assert node.halPins().names[0] == ''
+    assert node.halPins().names[1] == 'd_in_1'
+    assert node.halPins().names[2] == 'd_in_2'
 
 ########## DigitalOutputNode ##########
 def test_DigitalOutputNode_typeInfo():
     node = DigitalOutputNode()
-    assert node.typeInfo() == strings.D_OUT_NODE
+    assert node.typeInfo() == typ.D_OUT_NODE
 
 def test_DigitalOutputNode_valueName():
     node = DigitalOutputNode()
 
-    node.displayValueOff = 'down'
-    assert node.displayValueOff == 'down'
+    node.offName = 'down'
+    assert node.offName == 'down'
 
-    node.displayValueOn = 'up'
-    assert node.displayValueOn == 'up'
+    node.onName = 'up'
+    assert node.onName == 'up'
 
-    node.setData(20, False)
-    assert node.data(20) == False
-    assert node.data(21) == 'down'
+    node.setData(col.VALUE, False)
+    assert node.data(col.VALUE) == False
 
-    node.setData(20, True)
-    assert node.data(20) == True
-    assert node.data(21) == 'up'
+    node.setData(col.VALUE, True)
+    assert node.data(col.VALUE) == True
 
 
+def test_DigitalOutputNode_setData():
+    HalNode.hal_pins.append(('d_in_1', 'bit', 'OUT'))
+    HalNode.hal_pins.append(('d_in_2', 'bit', 'OUT'))
+    HalNode.hal_pins.append(('d_out_1', 'bit', 'IN'))
+    HalNode.hal_pins.append(('d_out_2', 'bit', 'IN'))
 
+    node = DigitalOutputNode()
+    node.setData(col.HAL_PIN, 2)
+    assert node.data(col.HAL_PIN) == 2 #uses an index
+    assert node.data(col.HAL_PIN_TYPE) == 'bit'
+    node.setData(col.HAL_PIN, 1)
+    assert node.data(col.HAL_PIN) == 1 #uses an index
+    assert node.data(col.HAL_PIN_TYPE) == 'bit'
+
+    assert node.halPins().names[0] == ''
+    assert node.halPins().names[1] == 'd_out_1'
+    assert node.halPins().names[2] == 'd_out_2'
 
 
 ########## AnalogInputNode ##########
 def test_AnalogInputNode_typeInfo():
     node = AnalogInputNode()
-    assert node.typeInfo() == strings.A_IN_NODE
+    assert node.typeInfo() == typ.A_IN_NODE
 
 def test_AnalogInputNode_calibrationTableModel():
     node = AnalogInputNode()
@@ -453,34 +479,33 @@ def test_AnalogInputNode_calibrationTableData():
     node.calibrationTableData = bad_cal
     assert node.calibrationTableData == good_cal
 
-    node.setData(20, .12)
-    assert node.displayValue() == 1.488
-    assert node.data(21) == 1.488
+    node.setData(col.HAL_VALUE, .12)
+    assert node.value() == 1.488
+    assert node.data(col.VALUE) == 1.488
 
 
 
-def test_AnalogInputNode_displayValue():
+def test_AnalogInputNode_value():
     node = AnalogInputNode()
     cal = [['hal_value','gui_value'],[0.0,0.0],[ 10.0, 500.0]]
     node.calibrationTableData = cal
 
-    node.setData(20, 1.0)
-    assert node.displayValue() == 50
-    assert node.data(21) == 50
+    node.setData(col.HAL_VALUE, 1.0)
+    assert node.value() == 50
+    assert node.data(col.VALUE) == 50
 
-    node.setData(20, 1.5)
-    assert node.displayValue() == 75
-    assert node.data(21) == 75
+    node.setData(col.HAL_VALUE, 1.5)
+    assert node.value() == 75
+    assert node.data(col.VALUE) == 75
 
 def test_AnalogInputNode_displayToHal():
     node = AnalogInputNode()
     cal = [['hal_value','gui_value'],[0.0,0.0],[ 10.0, 500.0]]
     node.calibrationTableData = cal
 
-    node.setData(20, 1.75)
-
-    assert node.data(20) == 1.75
-    assert node.displayToHal(node.displayValue()) == 1.75
+    node.setData(col.HAL_VALUE, 1.75)
+    assert node.data(col.HAL_VALUE) == 1.75
+    assert node.displayToHal(node.value()) == 1.75
 
 
 def test_AnalogInputNode_setData():
@@ -488,102 +513,108 @@ def test_AnalogInputNode_setData():
     cal = [['hal_value','gui_value'],[0.0,0.0],[ 10.0, 500.0]]
     node.calibrationTableData = cal
 
-    node.setData(20, 1.5)
-    node.setData(21, "can't set this")
-    node.setData(22, 'mTorr')
-    node.setData(23, 5)
-    node.setData(24, True)
-    node.setData(25, "can't set this")
+    node.setData(col.HAL_VALUE, 1.5)
+    node.setData(col.VALUE, "can't set this")
+    node.setData(col.UNITS, 'mTorr')
+    node.setData(col.DISPLAY_DIGITS, 5)
+    node.setData(col.DISPLAY_SCIENTIFIC, True)
+    node.setData(col.CALIBRATION_TABLE_MODEL, "can't set this")
 
-    assert node.data(20) == 1.5
-    assert node.data(21) == 75
-    assert node.data(22) == 'mTorr'
-    assert node.data(23) == 5
-    assert node.data(24) == True
-    assert type(node.data(25)) == type(CalibrationTableModel())
+    assert node.data(col.HAL_VALUE) == 1.5
+    assert node.data(col.VALUE) == 75
+    assert node.data(col.UNITS) == 'mTorr'
+    assert node.data(col.DISPLAY_DIGITS) == 5
+    assert node.data(col.DISPLAY_SCIENTIFIC) == True
+    assert type(node.data(col.CALIBRATION_TABLE_MODEL)) == type(CalibrationTableModel())
 
 
 ########## AnalogOutputNode ##########
 def test_AnalogOutputNode_typeInfo():
     node = AnalogOutputNode()
-    assert node.typeInfo() == strings.A_OUT_NODE
+    assert node.typeInfo() == typ.A_OUT_NODE
 
 
 ########## BoolVarNode ##########
 def test_BoolVarNode_typeInfo():
     node = BoolVarNode()
-    assert node.typeInfo() == strings.BOOL_VAR_NODE
+    assert node.typeInfo() == typ.BOOL_VAR_NODE
 
 def test_BoolVarNode_setData():
     node = BoolVarNode()
 
-    node.setData(10, True)
-    node.setData(13, True)
-    node.setData(14, True)
-    assert node.data(10) == True
-    assert node.data(13) == True
-    assert node.data(14) == True
+    node.setData(col.VALUE, True)
+    node.setData(col.ENABLE_MANUAL, True)
+    assert node.data(col.VALUE) == True
+    assert node.data(col.ENABLE_MANUAL) == True
 
-    node.setData(10, False)
-    node.setData(13, False)
-    node.setData(14, False)
-    assert node.data(10) == False
-    assert node.data(13) == False
-    assert node.data(14) == False
+    node.setData(col.VALUE, False)
+    node.setData(col.ENABLE_MANUAL, False)
+    assert node.data(col.VALUE) == False
+    assert node.data(col.ENABLE_MANUAL) == False
 
-    node.setData(10, 'False')
-    node.setData(13, 'False')
-    node.setData(14, 'False')
-    assert node.data(10) == False
-    assert node.data(13) == False
-    assert node.data(14) == False
+    node.setData(col.OFF_NAME, 'OPEN')
+    node.setData(col.ON_NAME, 'CLOSE')
+    assert node.data(col.OFF_NAME) == 'OPEN'
+    assert node.data(col.ON_NAME) == 'CLOSE'
 
-    node.setData(11, 'OPEN')
-    node.setData(12, 'CLOSE')
-    assert node.data(11) == 'OPEN'
-    assert node.data(12) == 'CLOSE'
-
-
-
-
-
+    #view only
+    node.setData(col.VIEW_ONLY, False)
+    assert node.data(col.VIEW_ONLY) == False
+    node.setData(col.VIEW_ONLY, True)
+    assert node.data(col.VIEW_ONLY) == True
 
 ########## FloatVarNode ##########
 def test_FloatVarNode_typeInfo():
     node = FloatVarNode()
-    assert node.typeInfo() == strings.FLOAT_VAR_NODE
+    assert node.typeInfo() == typ.FLOAT_VAR_NODE
 
 def test_FloatVarNode_setData():
     node = FloatVarNode()
+
+    node.setData(col.UNITS, 'mTorr')
+    node.setData(col.DISPLAY_DIGITS, 5)
+    node.setData(col.DISPLAY_SCIENTIFIC, True)
+
+    assert node.data(col.UNITS) == 'mTorr'
+    assert node.data(col.DISPLAY_DIGITS) == 5
+    assert node.data(col.DISPLAY_SCIENTIFIC) == True
+
+    #Value must be between min/max
     node.min = -10.0
     node.max = 10.0
 
     assert node.min == -10.0
     assert node.max == 10.0
 
-    node.setData(10, 1.234)
-    assert node.data(10) == 1.234
+    node.setData(col.VALUE, 1.234)
+    assert node.data(col.VALUE) == 1.234
 
-    node.setData(10, -991.234)
-    assert node.data(10) == -10.0
+    node.setData(col.VALUE, -991.234)
+    assert node.data(col.VALUE) == -10.0
 
-    node.setData(10, 12.0)
-    assert node.data(10) == 10.0
+    node.setData(col.VALUE, 12.0)
+    assert node.data(col.VALUE) == 10.0
 
     #min
-    node.setData(11, -100.1)
-    assert node.data(11) == -100.1
+    node.setData(col.MIN, -100.1)
+    assert node.data(col.MIN) == -100.1
 
     #max
-    node.setData(12, 100.1)
-    assert node.data(12) == 100.1
+    node.setData(col.MAX, 100.1)
+    assert node.data(col.MAX) == 100.1
 
-    node.setData(10, 102)
-    assert node.data(10) == 100.1
+    node.setData(col.VALUE, 102)
+    assert node.data(col.VALUE) == 100.1
 
     #man_enable
-    node.setData(13, True)
-    assert node.data(13) == True
+    node.setData(col.ENABLE_MANUAL, True)
+    assert node.data(col.ENABLE_MANUAL) == True
 
-    node.setData(13, False)
-    assert node.data(13) == False
+    node.setData(col.ENABLE_MANUAL, False)
+    assert node.data(col.ENABLE_MANUAL) == False
+
+    #view only
+    node.setData(col.VIEW_ONLY, False)
+    assert node.data(col.VIEW_ONLY) == False
+    node.setData(col.VIEW_ONLY, True)
+    assert node.data(col.VIEW_ONLY) == True

@@ -1,7 +1,7 @@
 {
     "children": [
         {
-            "backgroundSVG": "/usr/local/LinuxNano/resources/icons/unknown.svg",
+            "backgroundSVG": "linuxnano/resources/icons/unknown.svg",
             "children": [
                 {
                     "children": [
@@ -23,8 +23,8 @@
                         {
                             "children": [],
                             "description": "",
-                            "displayValueOff": "Close",
-                            "displayValueOn": "Open",
+                            "offName": "Close",
+                            "onName": "Open",
                             "halPin": "d_in_3",
                             "name": "is_closed",
                             "type_info": "Digital_Input_Node"
@@ -32,8 +32,8 @@
                         {
                             "children": [],
                             "description": "",
-                            "displayValueOff": "down",
-                            "displayValueOn": "up",
+                            "offName": "down",
+                            "onName": "up",
                             "halPin": "",
                             "name": "power",
                             "type_info": "Digital_Output_Node"
@@ -50,7 +50,7 @@
                                 ],
                                 [
                                     1.0,
-                                    1.0
+                                    10.0
                                 ]
                             ],
                             "children": [],
@@ -98,13 +98,17 @@
                         {
                             "children": [],
                             "description": "",
-                            "max": 0,
-                            "min": 0,
-                            "name": "Float_Var_Node",
-                            "type_info": "Float_Var_Node"
+                            "displayDigits": 1,
+                            "displayScientific": false,
+                            "enableManual": true,
+                            "max": 10,
+                            "min": -10,
+                            "name": "mfc_scale",
+                            "type_info": "Float_Var_Node",
+                            "units": "mTorr/V"
                         }
                     ],
-                    "description": "",
+                    "description": "This is a type of pump.",
                     "name": "Pump",
                     "type_info": "Device_Node"
                 }

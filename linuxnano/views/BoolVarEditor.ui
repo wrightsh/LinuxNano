@@ -77,7 +77,7 @@
         </size>
        </property>
        <property name="text">
-        <string>Off Enabled</string>
+        <string>Enable Manual</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -93,7 +93,7 @@
         </size>
        </property>
        <property name="text">
-        <string>On Enabled</string>
+        <string>View Only</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -101,14 +101,14 @@
       </widget>
      </item>
      <item row="4" column="1">
-      <widget class="QCheckBox" name="ui_on_enable">
+      <widget class="QCheckBox" name="ui_view_only">
        <property name="text">
         <string/>
        </property>
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QCheckBox" name="ui_off_enable">
+      <widget class="QCheckBox" name="ui_enable_manual">
        <property name="text">
         <string/>
        </property>
@@ -138,6 +138,9 @@
      </item>
      <item row="0" column="1">
       <widget class="QCheckBox" name="ui_value">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string/>
        </property>

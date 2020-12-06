@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtGui
 
-from linuxnano.strings import strings
+from linuxnano.strings import strings, col, typ
 from linuxnano.data import Node, ToolNode, SystemNode, DeviceNode, DeviceIconNode, DigitalInputNode, DigitalOutputNode, AnalogInputNode, AnalogOutputNode
 from linuxnano.data import BoolVarNode, FloatVarNode
 from linuxnano.message_box import MessageBox
@@ -19,7 +19,7 @@ class ToolModel(QtCore.QAbstractItemModel):
 
     def loadJSON(self, json):
         try:
-            if json['type_info'] == strings.TOOL_NODE:
+            if json['type_info'] == typ.TOOL_NODE:
                 self._root_node.loadAttrs(json)
 
                 for child in json['children']:
@@ -52,25 +52,25 @@ class ToolModel(QtCore.QAbstractItemModel):
     def possibleChildren(self, index):
         node_type = index.internalPointer().typeInfo()
 
-        if   node_type == strings.TOOL_NODE:
-            return [strings.SYSTEM_NODE]
+        if   node_type == typ.TOOL_NODE:
+            return [typ.SYSTEM_NODE]
 
-        elif node_type == strings.SYSTEM_NODE:
-            return [strings.DEVICE_NODE]
+        elif node_type == typ.SYSTEM_NODE:
+            return [typ.DEVICE_NODE]
 
-        elif node_type == strings.DEVICE_NODE:
-            return [strings.DEVICE_ICON_NODE,
-                    strings.D_IN_NODE,
-                    strings.D_OUT_NODE,
-                    strings.A_IN_NODE,
-                    strings.A_OUT_NODE,
-                    strings.BOOL_VAR_NODE,
-                    strings.FLOAT_VAR_NODE]
+        elif node_type == typ.DEVICE_NODE:
+            return [typ.DEVICE_ICON_NODE,
+                    typ.D_IN_NODE,
+                    typ.D_OUT_NODE,
+                    typ.A_IN_NODE,
+                    typ.A_OUT_NODE,
+                    typ.BOOL_VAR_NODE,
+                    typ.FLOAT_VAR_NODE]
 
-        elif node_type == strings.DEVICE_ICON_NODE:
+        elif node_type == typ.DEVICE_ICON_NODE:
             return []
 
-        elif node_type in [strings.D_IN_NODE, strings.D_OUT_NODE, strings.A_IN_NODE, strings.A_OUT_NODE, strings.BOOL_VAR_NODE, strings.FLOAT_VAR_NODE]:
+        elif node_type in [typ.D_IN_NODE, typ.D_OUT_NODE, typ.A_IN_NODE, typ.A_OUT_NODE, typ.BOOL_VAR_NODE, typ.FLOAT_VAR_NODE]:
             return []
 
     #def allowedInsertRows(self, node_index, new_child_type):
@@ -116,16 +116,16 @@ class ToolModel(QtCore.QAbstractItemModel):
         if insert_row is not False:
             self.beginInsertRows(parent_index, insert_row, insert_row)
 
-            if    child_type == strings.TOOL_NODE        : parent_node.insertChild(insert_row, ToolNode())
-            elif  child_type == strings.SYSTEM_NODE      : parent_node.insertChild(insert_row, SystemNode())
-            elif  child_type == strings.DEVICE_NODE      : parent_node.insertChild(insert_row, DeviceNode())
-            elif  child_type == strings.DEVICE_ICON_NODE : parent_node.insertChild(insert_row, DeviceIconNode())
-            elif  child_type == strings.D_IN_NODE        : parent_node.insertChild(insert_row, DigitalInputNode())
-            elif  child_type == strings.D_OUT_NODE       : parent_node.insertChild(insert_row, DigitalOutputNode())
-            elif  child_type == strings.A_IN_NODE        : parent_node.insertChild(insert_row, AnalogInputNode())
-            elif  child_type == strings.A_OUT_NODE       : parent_node.insertChild(insert_row, AnalogOutputNode())
-            elif  child_type == strings.BOOL_VAR_NODE    : parent_node.insertChild(insert_row, BoolVarNode())
-            elif  child_type == strings.FLOAT_VAR_NODE   : parent_node.insertChild(insert_row, FloatVarNode())
+            if    child_type == typ.TOOL_NODE        : parent_node.insertChild(insert_row, ToolNode())
+            elif  child_type == typ.SYSTEM_NODE      : parent_node.insertChild(insert_row, SystemNode())
+            elif  child_type == typ.DEVICE_NODE      : parent_node.insertChild(insert_row, DeviceNode())
+            elif  child_type == typ.DEVICE_ICON_NODE : parent_node.insertChild(insert_row, DeviceIconNode())
+            elif  child_type == typ.D_IN_NODE        : parent_node.insertChild(insert_row, DigitalInputNode())
+            elif  child_type == typ.D_OUT_NODE       : parent_node.insertChild(insert_row, DigitalOutputNode())
+            elif  child_type == typ.A_IN_NODE        : parent_node.insertChild(insert_row, AnalogInputNode())
+            elif  child_type == typ.A_OUT_NODE       : parent_node.insertChild(insert_row, AnalogOutputNode())
+            elif  child_type == typ.BOOL_VAR_NODE    : parent_node.insertChild(insert_row, BoolVarNode())
+            elif  child_type == typ.FLOAT_VAR_NODE   : parent_node.insertChild(insert_row, FloatVarNode())
 
             else: MessageBox('Attempting to insert unknown node of type', child_type)
 
@@ -185,11 +185,11 @@ class ToolModel(QtCore.QAbstractItemModel):
             node.setData(index.column(), value)
             self.dataChanged.emit(index, index)
 
-            if index.column() == 10 and node.typeInfo() in strings.HAL_NODES:
-                self.dataChanged.emit(index.siblingAtColumn(11), index.siblingAtColumn(11))
+            if index.column() == col.HAL_VALUE and node.typeInfo() in typ.HAL_NODES:
+                self.dataChanged.emit(index.siblingAtColumn(col.VALUE), index.siblingAtColumn(col.VALUE))
 
-            elif index.column() == 20 and node.typeInfo() in strings.HAL_NODES:
-                self.dataChanged.emit(index.siblingAtColumn(21), index.siblingAtColumn(21))
+            if index.column() == col.HAL_PIN and node.typeInfo() in typ.HAL_NODES:
+                self.dataChanged.emit(index.siblingAtColumn(col.HAL_PIN_TYPE), index.siblingAtColumn(col.HAL_PIN_TYPE))
 
             return True
 
@@ -205,7 +205,7 @@ class ToolModel(QtCore.QAbstractItemModel):
         node = index.internalPointer()
         flag = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-        if (index.column() == 1) and node.typeInfo() == strings.DEVICE_NODE:
+        if (index.column() == 1) and node.typeInfo() == typ.DEVICE_NODE:
             return flag | QtCore.Qt.ItemIsEditable
 
         return flag

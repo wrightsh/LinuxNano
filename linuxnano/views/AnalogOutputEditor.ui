@@ -56,6 +56,9 @@
      </item>
      <item row="3" column="1">
       <widget class="QDoubleSpinBox" name="ui_hal_value">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="minimum">
         <double>-1000000.000000000000000</double>
        </property>
@@ -73,7 +76,7 @@
         </size>
        </property>
        <property name="text">
-        <string>Display Value</string>
+        <string>Value</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -149,7 +152,10 @@
       </widget>
      </item>
      <item row="4" column="1">
-      <widget class="QDoubleSpinBox" name="ui_display_value">
+      <widget class="QDoubleSpinBox" name="ui_value">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="minimum">
         <double>-1000000.000000000000000</double>
        </property>

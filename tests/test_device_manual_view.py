@@ -9,7 +9,7 @@ from linuxnano.flags import TestingFlags
 from linuxnano.views.widgets.device_manual_view import DeviceManualView, ManualBoolView, ManualBoolSet, ManualFloatView, ManualFloatSet
 
 from linuxnano.tool_model import ToolModel
-from linuxnano.strings import strings
+from linuxnano.strings import typ, col
 from linuxnano.message_box import MessageBox
 import json
 from linuxnano.data import HalNode
@@ -72,20 +72,20 @@ def test_deviceParams(qtbot, open_window, tool_model):
     wid = open_window(DeviceManualView)
     wid.setModel(tool_model)
 
-    indexes = tool_model.indexesOfType(strings.DEVICE_NODE)
+    indexes = tool_model.indexesOfType(typ.DEVICE_NODE)
     dev = indexes[0]
     wid.setSelection(dev)
 
     #Name
-    tool_model.setData(dev.siblingAtColumn(0), 'A_New_Name')
+    tool_model.setData(dev.siblingAtColumn(col.NAME), 'A_New_Name')
     assert wid.ui_name.text() == 'A_New_Name'
 
     #Description
-    tool_model.setData(dev.siblingAtColumn(2), 'This is what the device is')
+    tool_model.setData(dev.siblingAtColumn(col.DESCRIPTION), 'This is what the device is')
     assert wid.ui_description.text() == 'This is what the device is'
 
     #Status
-    tool_model.setData(dev.siblingAtColumn(10), 'a status')
+    tool_model.setData(dev.siblingAtColumn(col.STATUS), 'a status')
     assert wid.ui_status.text() == 'a status'
 
 
@@ -96,7 +96,7 @@ def test_twoOpen(qtbot, open_window, tool_model):
     wid1.setModel(tool_model)
     wid2.setModel(tool_model)
 
-    indexes = tool_model.indexesOfType(strings.DEVICE_NODE)
+    indexes = tool_model.indexesOfType(typ.DEVICE_NODE)
     index = indexes[0]
 
     wid1.setSelection(index)
@@ -105,20 +105,31 @@ def test_twoOpen(qtbot, open_window, tool_model):
     assert wid1.isVisible()
     assert wid2.isVisible()
 
-    indexes = tool_model.indexesOfType(strings.D_IN_NODE)
+    indexes = tool_model.indexesOfType(typ.D_IN_NODE)
     d_in = indexes[0]
-    indexes = tool_model.indexesOfType(strings.A_IN_NODE)
+    indexes = tool_model.indexesOfType(typ.A_IN_NODE)
     a_in = indexes[0]
+    indexes = tool_model.indexesOfType(typ.BOOL_VAR_NODE)
+    bool_var = indexes[0]
 
     qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    tool_model.setData(d_in.siblingAtColumn(20), True)
-    tool_model.setData(a_in.siblingAtColumn(20), .11)
+    tool_model.setData(d_in.siblingAtColumn(col.HAL_VALUE), True)
+    tool_model.setData(a_in.siblingAtColumn(col.HAL_VALUE), .11)
     qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    tool_model.setData(d_in.siblingAtColumn(20), False)
-    tool_model.setData(a_in.siblingAtColumn(20), .22)
+    tool_model.setData(d_in.siblingAtColumn(col.HAL_VALUE), False)
+    tool_model.setData(a_in.siblingAtColumn(col.HAL_VALUE), .22)
     qtbot.wait(TestingFlags.TEST_WAIT_LONG)
-    tool_model.setData(d_in.siblingAtColumn(20), True)
-    tool_model.setData(a_in.siblingAtColumn(20), .33)
+    tool_model.setData(d_in.siblingAtColumn(col.HAL_VALUE), True)
+    tool_model.setData(a_in.siblingAtColumn(col.HAL_VALUE), .33)
+
+    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+    tool_model.setData(bool_var.siblingAtColumn(col.VALUE), False)
+    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+    tool_model.setData(bool_var.siblingAtColumn(col.OFF_ENABLE), False)
+    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+    tool_model.setData(bool_var.siblingAtColumn(col.OFF_ENABLE), True)
+    qtbot.wait(TestingFlags.TEST_WAIT_LONG)
+    tool_model.setData(bool_var.siblingAtColumn(col.ENABLE_MANUAL), False)
 
     if TestingFlags.ENABLE_MANUAL_TESTING is True:
         MessageBox("Test with two windows open")
@@ -126,7 +137,10 @@ def test_twoOpen(qtbot, open_window, tool_model):
 
 
 def test_ManualBoolView_init(qtbot, tool_model):
-    for index in tool_model.indexesOfType(strings.D_IN_NODE):
+    indexes = tool_model.indexesOfType(typ.BOOL_VAR_NODE)
+    indexes += tool_model.indexesOfType(typ.D_IN_NODE)
+
+    for index in indexes:
         wid = ManualBoolView()
         wid.setModel(tool_model)
         wid.setRootIndex(index.parent())
@@ -135,11 +149,46 @@ def test_ManualBoolView_init(qtbot, tool_model):
         qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
 
         assert wid.isVisible()
-        assert wid.ui_val.text() == index.internalPointer().displayValue()
+        assert wid.ui_val.text() != '' #Shouldn't be empty
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+
+        tool_model.setData(index.siblingAtColumn(col.VALUE), True)
+        assert wid.ui_val.text() == index.internalPointer().onName
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+
+        tool_model.setData(index.siblingAtColumn(col.VALUE), False)
+        assert wid.ui_val.text() == index.internalPointer().offName
+
+def test_ManualBoolSet(qtbot, tool_model):
+    for index in tool_model.indexesOfType(typ.BOOL_VAR_NODE):
+        wid = ManualBoolSet()
+        wid.setModel(tool_model)
+        wid.setRootIndex(index.parent())
+        wid.setCurrentModelIndex(index)
+        wid.show()
+
+        wid2 = ManualBoolSet()
+        wid2.setModel(tool_model)
+        wid2.setRootIndex(index.parent())
+        wid2.setCurrentModelIndex(index)
+        wid2.show()
+
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+        assert wid.isVisible()
+
+        tool_model.setData(index.siblingAtColumn(col.VALUE), True)
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+        tool_model.setData(index.siblingAtColumn(col.ENABLE_MANUAL), False)
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+        tool_model.setData(index.siblingAtColumn(col.ENABLE_MANUAL), True)
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+        tool_model.setData(index.siblingAtColumn(col.VALUE), False)
+
+        qtbot.stopForInteraction()
 
 
-def test_ManualFloatView_init(qtbot, tool_model):
-    for index in tool_model.indexesOfType(strings.A_IN_NODE):
+def test_ManualFloatView_FLOAT_VAR_NODE(qtbot, tool_model):
+    for index in tool_model.indexesOfType(typ.FLOAT_VAR_NODE):
         wid = ManualFloatView()
         wid.setModel(tool_model)
         wid.setRootIndex(index.parent())
@@ -148,46 +197,77 @@ def test_ManualFloatView_init(qtbot, tool_model):
         qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
 
         assert wid.isVisible()
-        assert wid.val == index.internalPointer().displayValue()
-        tool_model.setData(index.siblingAtColumn(20), .22)
-        assert wid.val == index.internalPointer().displayValue()
-
-
-
-
-
-
-
-
-def itest_selectDevice(qtbot, wid, tool_model, device_indexes):
-    wid.setSelection(device_indexes[0])
-    with qtbot.waitExposed(wid, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):pass
-    assert wid.isVisible()
-
-    for index in device_indexes:
-        wid.setSelection(index)
+        assert wid.val == index.internalPointer().value()
         qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
 
-    wid.setSelection(device_indexes[0])
-    if TestingFlags.ENABLE_MANUAL_TESTING is True:
-        message = QtWidgets.QMessageBox()
-        message.setText("Should have selected the devices.")
-        message.exec_()
+        tool_model.setData(index.siblingAtColumn(col.VALUE), .22)
+        assert wid.val != 0
+        assert wid.val == index.internalPointer().value()
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
 
-        qtbot.stopForInteraction()
+        tool_model.setData(index.siblingAtColumn(col.VALUE), .44)
+        assert wid.val == index.internalPointer().value()
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+
+def test_ManualFloatView_A_IN_NODE(qtbot, tool_model):
+    for index in tool_model.indexesOfType(typ.A_IN_NODE):
+        wid = ManualFloatView()
+        wid.setModel(tool_model)
+        wid.setRootIndex(index.parent())
+        wid.setCurrentModelIndex(index)
+        wid.show()
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+
+        assert wid.isVisible()
+        assert wid.val == index.internalPointer().value()
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+
+        tool_model.setData(index.siblingAtColumn(col.HAL_VALUE), .22)
+        assert wid.val != 0
+        assert wid.val == index.internalPointer().value()
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+
+        tool_model.setData(index.siblingAtColumn(col.HAL_VALUE), .44)
+        assert wid.val == index.internalPointer().value()
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
 
 
-def itest_selectDevice_object_count(qapp, qtbot, wid, tool_model, device_indexes):
-    wid.setSelection(device_indexes[0])
-    with qtbot.waitExposed(wid, timeout=TestingFlags.WAIT_ACTIVE_TIMEOUT):pass
+def test_ManualFloatSet_FLOAT_VAR_NODE(qtbot, tool_model):
+    for index in tool_model.indexesOfType(typ.FLOAT_VAR_NODE):
+        wid = ManualFloatSet()
+        wid.setModel(tool_model)
+        wid.setRootIndex(index.parent())
+        wid.setCurrentModelIndex(index)
+        wid.show()
+
+        wid2 = ManualFloatSet()
+        wid2.setModel(tool_model)
+        wid2.setRootIndex(index.parent())
+        wid2.setCurrentModelIndex(index)
+        wid2.show()
+
+        assert wid.isVisible()
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+        tool_model.setData(index.siblingAtColumn(col.VALUE), 2.1)
+        tool_model.setData(index.siblingAtColumn(col.ENABLE_MANUAL), False)
+        tool_model.setData(index.siblingAtColumn(col.VALUE), .44)
+        tool_model.setData(index.siblingAtColumn(col.ENABLE_MANUAL), True)
+        qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
+
+
+#TODO - this isn't really working / right
+def itest_selectDevice_object_count(qapp, qtbot, open_window, tool_model):
+    wid = open_window(DeviceManualView)
+    wid.setModel(tool_model)
+
+    indexes = tool_model.indexesOfType(typ.DEVICE_NODE)
     assert wid.isVisible()
-    qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
 
     starting_number = len(qapp.allWidgets())
     for i in range(50):
-        for index in device_indexes:
+        for index in indexes:
             wid.setSelection(index)
-    wid.setSelection(device_indexes[0])
+    wid.setSelection(indexes[0])
 
     post_number = len(qapp.allWidgets())
     qtbot.wait(TestingFlags.TEST_WAIT_LONG)

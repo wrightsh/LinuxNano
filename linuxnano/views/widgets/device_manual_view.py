@@ -3,11 +3,12 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtProperty
-from linuxnano.strings import strings
+from linuxnano.strings import strings, col, typ
 import subprocess
 
 manual_device_view_base, manual_device_view_form = uic.loadUiType("linuxnano/views/DeviceManualView.ui")
 
+from linuxnano.views.widgets.scientific_spin import ScientificDoubleSpinBox
 
 class DeviceManualView(manual_device_view_base, manual_device_view_form):
     def __init__(self, parent=None):
@@ -37,7 +38,6 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
         self._mapper.setRootIndex(parent_index)
         self._mapper.setCurrentModelIndex(index)
 
-
         #Look for any BoolVarNode or FloatVarNodes
         for row in range(self._model.rowCount(index)):
             child_index = index.child(row,0)
@@ -45,17 +45,18 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
 
             node =  child_index.internalPointer()
 
-            if node.typeInfo() in [strings.D_IN_NODE, strings.D_OUT_NODE]:
+            #A user never directly sets IO
+            if node.typeInfo() in [typ.D_IN_NODE, typ.D_OUT_NODE]:
                 wid = ManualBoolView()
 
-            elif node.typeInfo() in [strings.A_IN_NODE, strings.A_OUT_NODE]:
+            elif node.typeInfo() in [typ.A_IN_NODE, typ.A_OUT_NODE]:
                 wid = ManualFloatView()
 
-            elif node.typeInfo() == strings.BOOL_VAR_NODE:
-                if node.allowManual:
-                    wid = ManualBoolSet()
-                else:
-                    wid = ManualBoolView()
+            elif node.typeInfo() == typ.BOOL_VAR_NODE:
+                wid = ManualBoolView() if node.viewOnly else ManualBoolSet()
+
+            elif node.typeInfo() == typ.FLOAT_VAR_NODE:
+                wid = ManualFloatView() if node.viewOnly else ManualFloatSet()
 
             if wid is not None:
                 wid.setModel(child_index.model())
@@ -71,9 +72,9 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
         self._model = model
 
         self._mapper.setModel(model)
-        self._mapper.addMapping(self.ui_name,              0, bytes("text",'ascii'))
-        self._mapper.addMapping(self.ui_description,       2, bytes("text",'ascii'))
-        self._mapper.addMapping(self.ui_status,           10, bytes("text",'ascii'))
+        self._mapper.addMapping(self.ui_name, col.NAME, bytes("text",'ascii'))
+        self._mapper.addMapping(self.ui_description, col.DESCRIPTION, bytes("text",'ascii'))
+        self._mapper.addMapping(self.ui_status, col.STATUS, bytes("text",'ascii'))
 
     def model(self):
         return self._model
@@ -90,6 +91,8 @@ class ManualBoolView(QtWidgets.QWidget):
 
         self.ui_name = QtWidgets.QLabel('unknown')
         self.ui_val = QtWidgets.QLabel('?')
+        self._off_name = ""
+        self._on_name = ""
 
         hbox.addWidget(self.ui_name)
         hbox.addWidget(QtWidgets.QLabel(': '))
@@ -103,13 +106,118 @@ class ManualBoolView(QtWidgets.QWidget):
         self.mapper.setCurrentModelIndex(index)
         node = index.internalPointer()
 
-        #These aren't updating a lot so they can just be set
+        #These aren't changing often so they can just be set
         self.ui_name.setText(str(node.name))
+        self._off_name = node.offName
+        self._on_name = node.onName
+
+        txt = self._on_name if node.value() else self._off_name
+        self.ui_val.setText(txt)
+
+
+    @QtCore.pyqtProperty(int)
+    def value(self):
+        pass
+
+    @value.setter
+    def value(self, value):
+        txt = self._on_name if value else self._off_name
+        self.ui_val.setText(txt)
 
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):model = model.sourceModel()
         self.mapper.setModel(model)
-        self.mapper.addMapping(self.ui_val , 21, bytes("text",'ascii'))
+        self.mapper.addMapping(self, col.VALUE, bytes('value','ascii'))
+
+
+class ManualBoolSet(QtWidgets.QWidget):
+    #Format "Name : bnt_off btn_on", buttons get grayed out if enable_manual isn't true
+    def __init__(self):
+        super().__init__()
+        self.mapper_1 = QtWidgets.QDataWidgetMapper()
+        self.mapper_2 = QtWidgets.QDataWidgetMapper()
+
+        hbox = QtWidgets.QHBoxLayout(self)
+        self.setLayout(hbox)
+
+        self.ui_name = QtWidgets.QLabel('unknown')
+
+        self.btn_group = QtWidgets.QButtonGroup()
+        self.btn_group.setExclusive(True)
+        self.btn_group.buttonClicked.connect(self.onClicked)
+
+        self.ui_btn1 = QtWidgets.QPushButton('?', self)
+        self.ui_btn2 = QtWidgets.QPushButton('?', self)
+        self.ui_btn1.setCheckable(True)
+        self.ui_btn2.setCheckable(True)
+
+        self.btn_group.addButton(self.ui_btn1, 0)
+        self.btn_group.addButton(self.ui_btn2, 1)
+
+        hbox.addWidget(self.ui_name)
+        hbox.addWidget(QtWidgets.QLabel(': '))
+        hbox.addWidget(self.ui_btn1)
+        hbox.addWidget(self.ui_btn2)
+        hbox.addStretch(1)
+
+        self.via_this_button = False
+        self.btn_group.buttonClicked.connect(self.mapper_1.submit)
+        self.mapper_1.currentIndexChanged.connect(self.mapper_2.setCurrentIndex)
+
+
+    def setRootIndex(self, index):
+        self.mapper_1.setRootIndex(index)
+        self.mapper_2.setRootIndex(index)
+
+    def setCurrentModelIndex(self, index):
+        self.mapper_1.setCurrentModelIndex(index)
+        self.mapper_2.setCurrentModelIndex(index)
+
+        node = index.internalPointer()
+
+        #These aren't changing often so they can just be set
+        self.ui_name.setText(str(node.name))
+        self.ui_btn1.setText(str(node.offName))
+        self.ui_btn2.setText(str(node.onName))
+
+    def onClicked(self, btn):
+        self.via_this_button = True
+        self.value = self.btn_group.checkedId()
+
+    @QtCore.pyqtProperty(int)
+    def value(self):
+        return self.btn_group.checkedId()
+
+    @value.setter
+    def value(self, value):
+        if not self.via_this_button:
+            if value:
+                self.ui_btn2.setChecked(True)
+            else:
+                self.ui_btn1.setChecked(True)
+
+        self.via_this_button = False
+
+    @QtCore.pyqtProperty(int)
+    def enableManual(self):
+        return self.ui_btn1.isEnabled()
+
+    @enableManual.setter
+    def enableManual(self, value):
+        if value:
+            self.ui_btn1.setEnabled(True)
+            self.ui_btn2.setEnabled(True)
+        else:
+            self.ui_btn1.setEnabled(False)
+            self.ui_btn2.setEnabled(False)
+
+    def setModel(self, model):
+        if hasattr(model, 'sourceModel'):model = model.sourceModel()
+        self.mapper_1.setModel(model)
+        self.mapper_2.setModel(model)
+
+        self.mapper_1.addMapping(self, col.VALUE, bytes('value','ascii'))
+        self.mapper_2.addMapping(self, col.ENABLE_MANUAL, bytes('enableManual','ascii'))
 
 
 class ManualFloatView(QtWidgets.QWidget):
@@ -142,7 +250,7 @@ class ManualFloatView(QtWidgets.QWidget):
         self.mapper.setCurrentModelIndex(index)
         node = index.internalPointer()
 
-        #These aren't updating a lot so they can just be set
+        #These aren't changing often so they can just be set
         self.ui_name.setText(str(node.name))
         self.ui_units.setText(str(node.units))
         self._display_digits = index.internalPointer().displayDigits
@@ -169,119 +277,27 @@ class ManualFloatView(QtWidgets.QWidget):
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):model = model.sourceModel()
         self.mapper.setModel(model)
-        self.mapper.addMapping(self, 21, bytes('val','ascii')) #Only one mapping of 'self' allowed per mapper
+        self.mapper.addMapping(self, col.VALUE, bytes('val','ascii')) #Only one mapping of 'self' allowed per mapper
 
 
-
-
-
-
-
-
-
-class ManualBoolSet(QtWidgets.QWidget):
-    #Format "Name : bnt_off btn_on", buttons get grayed out if they aren't allowed
-    def __init__(self):
-        super().__init__()
-        self.mapper = QtWidgets.QDataWidgetMapper()
-        hbox = QtWidgets.QHBoxLayout(self)
-        self.setLayout(hbox)
-
-        self.ui_name = QtWidgets.QLabel('unknown')
-
-        self.btn_group = QtWidgets.QButtonGroup()
-        self.btn_group.setExclusive(True)
-        self.btn_group.buttonClicked.connect(self.onClicked)
-
-        self.ui_btn1 = QtWidgets.QPushButton('?', self)
-        self.ui_btn2 = QtWidgets.QPushButton('?', self)
-        self.ui_btn1.setCheckable(True)
-        self.ui_btn2.setCheckable(True)
-
-        self.btn_group.addButton(self.ui_btn1)
-        self.btn_group.addButton(self.ui_btn2)
-
-        hbox.addWidget(self.ui_name)
-        hbox.addWidget(QtWidgets.QLabel(': '))
-        hbox.addWidget(self.ui_btn1)
-        hbox.addWidget(self.ui_btn2)
-        hbox.addStretch(1)
-
-    def setRootIndex(self, index):
-        self.mapper.setRootIndex(index)
-
-    def setCurrentModelIndex(self, index):
-        self.mapper.setCurrentModelIndex(index)
-        node = index.internalPointer()
-
-        #These aren't updating a lot so they can just be set
-        self.ui_name.setText(str(node.name))
-        self.ui_btn1.setText(str(node.offName))
-        self.ui_btn2.setText(str(node.onName))
-
-    def onClicked(self, btn):
-        if self.via_value_setter:
-            self.via_value_setter = False
-            return
-
-        state = self.btn_group.checkedId()
-        self._node.manualQueuePut(state)
-
-    @QtCore.pyqtProperty(int)
-    def value(self):
-        return self.btn_group.checkedId()
-
-    @value.setter
-    def value(self, value):
-        if self.btn_group.checkedId() != value and value is not None:
-            self.via_value_setter = True
-            #this is needed until we change to using the hal streamer incase the outputs dont switch fast enough
-            if self.btn_group.button(value) is not None:
-                self.btn_group.button(value).click()
-
-    @QtCore.pyqtProperty(int)
-    def interlock(self):
-        pass
-        #return self._interlock
-
-    @interlock.setter
-    def interlock(self, value):
-        print("interlock_setter")
-        try:
-            for btn in self.btn_group.buttons():
-                if (value>>self.btn_group.id(btn))&1 != 0:
-                #if value & self.btn_group.id(btn):
-                    btn.setEnabled(True)
-                else:
-                    btn.setEnabled(False)
-        except:
-            print("exception!")
-
-    def setModel(self, model):
-        if hasattr(model, 'sourceModel'):model = model.sourceModel()
-        self.mapper.setModel(model)
-        #self.mapper.addMapping(self.name_label, 0, bytes("text",'ascii'))
-        #self.mapper.addMapping(self, 22, bytes('interlock','ascii'))
-        #self.mapper.addMapping(self, 20, bytes('value','ascii')) #FIXME no idea why this breaks if I change the order of the addMapping
-
-
+#TODO I think I need to add digits and scientific logic to this
 class ManualFloatSet(QtWidgets.QWidget):
-    '''Each analog output node is shown as a row
-       Format: "Name : value units"  '''
+    #Format: "Name : value units"
     def __init__(self):
         super().__init__()
         self.mapper = QtWidgets.QDataWidgetMapper()
+        self.mapper = QtWidgets.QDataWidgetMapper()
+
         hbox = QtWidgets.QHBoxLayout()
         self.setLayout(hbox)
 
-        #QtWidgets.QLabel(item['name'] +"    -    " + "{:10.1f}".format(tmp_val ) + " " +item['units']))
-        self.name_label = QtWidgets.QLabel('unknown_name')
-        self.value = QtWidgets.QSpinBox()
-        self.units_label = QtWidgets.QLabel('unknown_units')
-        hbox.addWidget(self.name_label)
+        self.ui_name = QtWidgets.QLabel('unknown')
+        self.ui_value = ScientificDoubleSpinBox()
+        self.ui_units = QtWidgets.QLabel('units')
+        hbox.addWidget(self.ui_name)
         hbox.addWidget(QtWidgets.QLabel(': '))
-        hbox.addWidget(self.value)
-        hbox.addWidget(self.units_label)
+        hbox.addWidget(self.ui_value)
+        hbox.addWidget(self.ui_units)
         hbox.addStretch(1)
 
     def setRootIndex(self, index):
@@ -290,9 +306,25 @@ class ManualFloatSet(QtWidgets.QWidget):
     def setCurrentModelIndex(self, index):
         self.mapper.setCurrentModelIndex(index)
 
+        #These aren't changing often so they can just be set
+        node = index.internalPointer()
+        self.ui_name.setText(str(node.name))
+        self.ui_units.setText(str(node.units))
+
+    @QtCore.pyqtProperty(int)
+    def enableManual(self):
+        return self.ui_value.isEnabled()
+
+    @enableManual.setter
+    def enableManual(self, value):
+        if value:
+            self.ui_value.setEnabled(True)
+        else:
+            self.ui_value.setEnabled(False)
+
     def setModel(self, model):
         if hasattr(model, 'sourceModel'):model = model.sourceModel()
         self.mapper.setModel(model)
-        self.mapper.addMapping(self.name_label, 0, bytes("text",'ascii'))
-        self.mapper.addMapping(self.value, 30)# bytes("text",'ascii'))
-        self.mapper.addMapping(self.units_label, 22, bytes("text",'ascii'))
+
+        self.mapper.addMapping(self.ui_value, col.VALUE)# bytes("text",'ascii'))
+        self.mapper.addMapping(self, col.ENABLE_MANUAL, bytes('enableManual','ascii'))

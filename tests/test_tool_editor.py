@@ -10,7 +10,7 @@ from linuxnano.tool_editor import BoolVarEditor, FloatVarEditor
 
 from linuxnano.message_box import MessageBox
 from linuxnano.flags import TestingFlags
-from linuxnano.strings import strings
+from linuxnano.strings import col, typ
 
 import json
 from linuxnano.data import HalNode
@@ -56,10 +56,7 @@ def tool_model():
 
     model.loadJSON(json_data)
 
-
     return model
-
-
 
 
 def test_ToolEditor(qtbot, open_window, tool_model):
@@ -78,7 +75,7 @@ def test_NodeEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.DEVICE_NODE):
+    for index in tool_model.indexesOfType(typ.DEVICE_NODE):
         editor1.setSelection(index)
         editor2.setSelection(index)
         qtbot.mouseClick(editor1.ui_name, QtCore.Qt.LeftButton)
@@ -100,13 +97,14 @@ def test_SystemEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.SYSTEM_NODE):
+    for index in tool_model.indexesOfType(typ.SYSTEM_NODE):
+        node = index.internalPointer()
         editor1.setSelection(index)
         editor2.setSelection(index)
         qtbot.mouseClick(editor1.ui_background_svg, QtCore.Qt.LeftButton)
         assert editor1.isVisible()
         assert editor2.isVisible()
-        assert index.internalPointer().backgroundSVG == editor1.ui_background_svg.text()
+        assert node.backgroundSVG == editor1.ui_background_svg.text()
 
     if TestingFlags.ENABLE_MANUAL_TESTING:
         MessageBox("System Editor Manual Testing")
@@ -119,7 +117,7 @@ def test_DeviceEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.DEVICE_NODE):
+    for index in tool_model.indexesOfType(typ.DEVICE_NODE):
         editor1.setSelection(index)
         editor2.setSelection(index)
         assert editor1.isVisible()
@@ -136,20 +134,21 @@ def test_DeviceIconEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.DEVICE_ICON_NODE):
+    for index in tool_model.indexesOfType(typ.DEVICE_ICON_NODE):
+        node = index.internalPointer()
         editor1.setSelection(index)
         editor2.setSelection(index)
         assert editor1.isVisible()
         assert editor2.isVisible()
 
-        assert index.internalPointer().x == editor1.ui_x.value()
-        assert index.internalPointer().y == editor1.ui_y.value()
-        assert index.internalPointer().scale == editor1.ui_scale.value()
-        assert index.internalPointer().rotation == editor1.ui_rotation.value()
-        assert index.internalPointer().hasText == editor1.ui_has_text.isChecked()
-        assert index.internalPointer().textX == editor1.ui_text_x.value()
-        assert index.internalPointer().textY == editor1.ui_text_y.value()
-        assert index.internalPointer().fontSize == editor1.ui_font_size.value()
+        assert node.x == editor1.ui_x.value()
+        assert node.y == editor1.ui_y.value()
+        assert node.scale == editor1.ui_scale.value()
+        assert node.rotation == editor1.ui_rotation.value()
+        assert node.hasText == editor1.ui_has_text.isChecked()
+        assert node.textX == editor1.ui_text_x.value()
+        assert node.textY == editor1.ui_text_y.value()
+        assert node.fontSize == editor1.ui_font_size.value()
 
     if TestingFlags.ENABLE_MANUAL_TESTING:
         MessageBox("Device Icon Editor Testing")
@@ -162,18 +161,18 @@ def test_DigitalInputEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.D_IN_NODE):
+    for index in tool_model.indexesOfType(typ.D_IN_NODE):
+        node = index.internalPointer()
         editor1.setSelection(index)
         editor2.setSelection(index)
         assert editor1.isVisible()
         assert editor2.isVisible()
-        assert index.internalPointer().halPin == editor1.ui_hal_pin.currentText()
-        assert index.internalPointer().displayValueOff == editor1.ui_display_value_off.text()
-        assert index.internalPointer().displayValueOn == editor1.ui_display_value_on.text()
-        assert index.internalPointer().displayValue() == editor1.ui_display_value.text()
-        tool_model.setData(index.siblingAtColumn(20), True)
-        tool_model.setData(index.siblingAtColumn(21), True)
-        assert index.internalPointer().displayValue() == editor1.ui_display_value.text()
+
+        tool_model.setData(index.siblingAtColumn(col.VALUE), True)
+        assert node.halPin == editor1.ui_hal_pin.currentText()
+        assert node.offName == editor1.ui_off_name.text()
+        assert node.onName == editor1.ui_on_name.text()
+        assert node.value() == editor1.ui_value.isChecked()
 
     if TestingFlags.ENABLE_MANUAL_TESTING:
         MessageBox("Digital Input Editor Testing")
@@ -186,18 +185,18 @@ def test_DigitalOutputEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.D_OUT_NODE):
+    for index in tool_model.indexesOfType(typ.D_OUT_NODE):
+        node = index.internalPointer()
         editor1.setSelection(index)
         editor2.setSelection(index)
         assert editor1.isVisible()
         assert editor2.isVisible()
-        assert index.internalPointer().halPin == editor1.ui_hal_pin.currentText()
-        assert index.internalPointer().displayValueOff == editor1.ui_display_value_off.text()
-        assert index.internalPointer().displayValueOn == editor1.ui_display_value_on.text()
-        assert index.internalPointer().displayValue() == editor1.ui_display_value.text()
-        tool_model.setData(index.siblingAtColumn(20), True)
-        tool_model.setData(index.siblingAtColumn(21), True)
-        assert index.internalPointer().displayValue() == editor1.ui_display_value.text()
+
+        assert node.halPin == editor1.ui_hal_pin.currentText()
+        assert node.offName == editor1.ui_off_name.text()
+        assert node.onName == editor1.ui_on_name.text()
+        assert node.value() == editor1.ui_value.isEnabled()
+
 
     if TestingFlags.ENABLE_MANUAL_TESTING:
         MessageBox("Digital Output Editor Testing")
@@ -210,13 +209,15 @@ def test_AnalogInputEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.A_IN_NODE):
+    for index in tool_model.indexesOfType(typ.A_IN_NODE):
         editor1.setSelection(index)
         editor2.setSelection(index)
         assert editor1.isVisible()
         assert editor2.isVisible()
+
+        tool_model.setData(index.siblingAtColumn(col.HAL_PIN), 1)
         assert index.internalPointer().halPin == editor1.ui_hal_pin.currentText()
-        assert index.internalPointer().displayValue() == editor1.ui_display_value.value()
+        assert index.internalPointer().value() == editor1.ui_value.value()
         assert index.internalPointer().units == editor1.ui_units.text()
         assert index.internalPointer().displayDigits == editor1.ui_display_digits.value()
         assert index.internalPointer().displayScientific == editor1.ui_display_scientific.isChecked()
@@ -232,13 +233,16 @@ def test_AnalogOutputEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.A_OUT_NODE):
+    for index in tool_model.indexesOfType(typ.A_OUT_NODE):
         editor1.setSelection(index)
         editor2.setSelection(index)
         assert editor1.isVisible()
         assert editor2.isVisible()
+
+        tool_model.setData(index.siblingAtColumn(col.HAL_PIN), 1)
         assert index.internalPointer().halPin == editor1.ui_hal_pin.currentText()
-        assert index.internalPointer().displayValue() == editor1.ui_display_value.value()
+        assert editor1.ui_hal_pin_type.text() != ''
+        assert index.internalPointer().value() == editor1.ui_value.value()
         assert index.internalPointer().units == editor1.ui_units.text()
         assert index.internalPointer().displayDigits == editor1.ui_display_digits.value()
         assert index.internalPointer().displayScientific == editor1.ui_display_scientific.isChecked()
@@ -254,7 +258,7 @@ def test_BoolVarEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.BOOL_VAR_NODE):
+    for index in tool_model.indexesOfType(typ.BOOL_VAR_NODE):
         editor1.setSelection(index)
         editor2.setSelection(index)
         assert editor1.isVisible()
@@ -262,6 +266,8 @@ def test_BoolVarEditor(qtbot, open_window, tool_model):
 
         assert index.internalPointer().offName == editor1.ui_off_name.text()
         assert index.internalPointer().onName == editor1.ui_on_name.text()
+        assert index.internalPointer().enableManual == editor1.ui_enable_manual.isChecked()
+        assert index.internalPointer().viewOnly == editor1.ui_view_only.isChecked()
 
     if TestingFlags.ENABLE_MANUAL_TESTING:
         MessageBox("Bool Var Editor Testing")
@@ -273,7 +279,7 @@ def test_FloatVarEditor(qtbot, open_window, tool_model):
     editor1.setModel(tool_model)
     editor2.setModel(tool_model)
 
-    for index in tool_model.indexesOfType(strings.FLOAT_VAR_NODE):
+    for index in tool_model.indexesOfType(typ.FLOAT_VAR_NODE):
         editor1.setSelection(index)
         editor2.setSelection(index)
         assert editor1.isVisible()
@@ -281,6 +287,11 @@ def test_FloatVarEditor(qtbot, open_window, tool_model):
 
         assert index.internalPointer().min == editor1.ui_min.value()
         assert index.internalPointer().max == editor1.ui_max.value()
+        assert index.internalPointer().units == editor1.ui_units.text()
+        assert index.internalPointer().displayDigits == editor1.ui_display_digits.value()
+        assert index.internalPointer().displayScientific == editor1.ui_display_scientific.isChecked()
+        assert index.internalPointer().enableManual == editor1.ui_enable_manual.isChecked()
+        assert index.internalPointer().viewOnly == editor1.ui_view_only.isChecked()
 
     if TestingFlags.ENABLE_MANUAL_TESTING:
         MessageBox("Float Var Editor Testing")
