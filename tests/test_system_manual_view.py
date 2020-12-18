@@ -2,52 +2,53 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+import json
+
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from linuxnano.views.widgets.system_manual_view import SystemManualView
 import xml.etree.ElementTree as ET
 from linuxnano.tool_model import ToolModel
 
-from linuxnano.strings import strings
+from linuxnano.strings import typ, col
 from linuxnano.flags import TestingFlags
 from linuxnano.message_box import MessageBox
-
 
 @pytest.fixture
 def open_window(qtbot):
     def callback(window):
         widget = window()
+        widget.resize(400,400)
         qtbot.addWidget(widget)
-        widget.resize(700,700)
-        widget.show()
         widget.setWindowTitle(widget.__class__.__name__)
+        widget.show()
         qtbot.wait_for_window_shown(widget)
         qtbot.wait(TestingFlags.TEST_WAIT_LONG)
         return widget
     return callback
 
-
-@pytest.fixture(params=['tests/tools/tool_model_1.xml','tests/tools/tool_model_2.xml'])
+@pytest.fixture(params=['tests/tools/basic_tool_1.json'])
 def tool_model(request):
-    tree = ET.parse(request.param)
-    tool_model = ToolModel()
-    tool_model.loadTool(tree)
-    return tool_model
+    model = ToolModel()
+    file = request.param
+    with open(file) as f:
+        json_data = json.load(f)
+
+    model.loadJSON(json_data)
+    return model
 
 
-def itest_init(qtbot):
+def test_init(qtbot):
     view = SystemManualView()
     assert isinstance(view, SystemManualView)
 
-
-def itest_setModel(qtbot, tool_model):
+def test_setModel(qtbot, tool_model):
     view = SystemManualView()
     view.setModel(tool_model)
     assert tool_model == view.model()
 
-
-def itest_selectSystem(qtbot, open_window, tool_model):
-    system_indexes = tool_model.indexesOfType(strings.SYSTEM_NODE)
+def test_selectSystem(qtbot, open_window, tool_model):
+    system_indexes = tool_model.indexesOfType(typ.SYSTEM_NODE)
 
     wid = open_window(SystemManualView)
     wid.setModel(tool_model)
@@ -66,8 +67,8 @@ def itest_selectSystem(qtbot, open_window, tool_model):
         qtbot.stopForInteraction()
 
 
-def itest_selectDevice(qtbot, open_window, tool_model):
-    device_indexes = tool_model.indexesOfType(strings.DEVICE_NODE)
+def test_selectDevice(qtbot, open_window, tool_model):
+    device_indexes = tool_model.indexesOfType(typ.DEVICE_NODE)
 
     wid = open_window(SystemManualView)
     wid.setModel(tool_model)
@@ -82,26 +83,25 @@ def itest_selectDevice(qtbot, open_window, tool_model):
         MessageBox("Should have selected the devices for this tool.")
         qtbot.stopForInteraction()
 
+def test_fixMe(qtbot):
+    assert False == 'We only have 1 tool thats being tested right now'
 
 def test_setLayer(qtbot, open_window, tool_model):
-    device_indexes = tool_model.indexesOfType(strings.DEVICE_NODE)
+    device_indexes = tool_model.indexesOfType(typ.DEVICE_NODE)
+    icon_indexes = tool_model.indexesOfType(typ.DEVICE_ICON_NODE)
 
     wid = open_window(SystemManualView)
     wid.setModel(tool_model)
-    wid.setSelection(device_indexes[0])
     assert wid.isVisible()
 
-    for i, dev_index in enumerate(device_indexes):
-        layers = dev_index.internalPointer().iconLayerList()
+    for i, icon_index in enumerate(icon_indexes):
+        node = icon_index.internalPointer()
 
-        for layer in layers.names:
-            wid.setSelection(dev_index)
-
-            tool_model.setData(dev_index.siblingAtColumn(11), layer)
-            assert tool_model.data(dev_index.siblingAtColumn(11), QtCore.Qt.DisplayRole) == layer
-
+        wid.setSelection(icon_index.parent())
+        for layer in node.layers().names:
+            tool_model.setData(icon_index.siblingAtColumn(col.LAYER), layer)
+            assert tool_model.data(icon_index.siblingAtColumn(col.LAYER), QtCore.Qt.DisplayRole) == layer
             qtbot.wait(TestingFlags.TEST_WAIT_SHORT)
-
 
     if TestingFlags.ENABLE_MANUAL_TESTING:
         MessageBox("For each device it should have cycled through the icon layers.")

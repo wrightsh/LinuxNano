@@ -3,9 +3,7 @@
 
 import pytest
 import copy
-
 from PyQt5 import QtCore, QtWidgets, QtGui
-
 from linuxnano.flags import TestingFlags
 from linuxnano.calibration_table_model import CalibrationTableModel
 

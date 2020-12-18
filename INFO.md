@@ -12,12 +12,21 @@ This device is a light that is controlled from a digital output.  We want a butt
 
 The setup is the same as the Simple valve but we'll add in a FloatVarNode that will store the 2min timeout.  The sequence then will be comparing the on time vs that floatVarNode and once it hits 2 min it'll turn it back off.
 
+
+#Components
 ```mermaid
-stateDiagram-v2
-[*] --> Still
-Still --> [*]
-Still --> Moving
-Moving --> Still
-Moving --> Crash
-Crash --> [*]
+graph TD
+A(Main) --> B(Tool Editor)
+A --> C(Manual View)
+A --> D(Sequence Editor)
 ```
+
+
+#ToDo
+* I have some fancy traceback thing in the calibration table tests, not sure if I was planning on using that everywhere or something.
+
+* Should some of these properties be QVariants instead of ints?
+  ```
+  @QtCore.pyqtProperty(QtCore.QVariant)
+    def val(self):
+  ```

@@ -212,6 +212,16 @@ class DeviceIconEditor(device_icon_base, device_icon_form):
         self.mapper.addMapping(self.ui_text_y   , col.TEXT_Y)
         self.mapper.addMapping(self.ui_font_size, col.FONT_SIZE)
 
+        #self.mapper.setSubmitPolicy(QtWidgets.QDataWidgetMapper.ManualSubmit)
+        #self.ui_x.valueChanged.connect(self.mapper.submit)
+        #self.ui_y.valueChanged.connect(self.mapper.submit)
+        #self.ui_scale.valueChanged.connect(self.mapper.submit)
+        #self.ui_rotation.valueChanged.connect(self.mapper.submit)
+        #self.ui_has_text.stateChanged.connect(self.mapper.submit)
+        #self.ui_text_x.valueChanged.connect(self.mapper.submit)
+        #self.ui_text_y.valueChanged.connect(self.mapper.submit)
+        #self.ui_font_size.valueChanged.connect(self.mapper.submit)
+
 
     def setSelection(self, current):
         parent = current.parent()
@@ -425,6 +435,8 @@ class FloatVarEditor(float_var_base, float_var_form):
         self.mapper.addMapping(self.ui_display_scientific, col.DISPLAY_SCIENTIFIC)
         self.mapper.addMapping(self.ui_enable_manual     , col.ENABLE_MANUAL)
         self.mapper.addMapping(self.ui_view_only         , col.VIEW_ONLY)
+
+
 
     def setSelection(self, current):
         parent = current.parent()

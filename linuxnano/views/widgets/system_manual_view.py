@@ -1,16 +1,14 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 from PyQt5 import QtGui, QtCore, QtWidgets, QtSvg
-from linuxnano.strings import strings
+from linuxnano.strings import typ, col
 from linuxnano.views.widgets.device_icon_widget import DeviceIconWidget
 
 
 class SystemManualView(QtWidgets.QAbstractItemView):
     def __init__(self, parent=None):
         super().__init__(parent)
-
         self._scene_box = QtCore.QRectF(0, 0, 1000, 1000)
-
         self._previous_index = None
         self._scene = QtWidgets.QGraphicsScene(self)
         self._renderers = []
@@ -20,7 +18,6 @@ class SystemManualView(QtWidgets.QAbstractItemView):
         self._view = QtWidgets.QGraphicsView(self)
         self._view.setScene(self._scene)
         self._view.scale(1, 1)
-
 
         #Layout
         self.h_layout = QtWidgets.QHBoxLayout()
@@ -37,15 +34,14 @@ class SystemManualView(QtWidgets.QAbstractItemView):
 
     #TODO will this called too often?
     def dataChanged(self, index_top_left, index_bottom_right, roles):
-
         index = index_top_left
         tool_model = self.model()
 
-        if index == self._current_system_index and index.column() == 10: #systems background svg is changed
+        if index == self._current_system_index and index.column() == col.BACKGROUND_SVG:
             self.setBackground(tool_model.data(index, QtCore.Qt.DisplayRole))
 
-        elif index.internalPointer().typeInfo() == strings.DEVICE_ICON_NODE and  index.parent().parent() == self._current_system_index:
-            if index.column() == 10:
+        elif index.internalPointer().typeInfo() == typ.DEVICE_ICON_NODE and  index.parent().parent() == self._current_system_index:
+            if index.column() == col.SVG:
                 try:
                     icon_node = index.internalPointer()
                     wid = self._device_icons[index.parent().row()]
@@ -54,7 +50,7 @@ class SystemManualView(QtWidgets.QAbstractItemView):
                 except:
                     pass
 
-            elif index.column() == 11:
+            elif index.column() == col.LAYER:
                 try:
                     icon_node = index.internalPointer()
                     wid = self._device_icons[index.parent().row()]
@@ -62,7 +58,7 @@ class SystemManualView(QtWidgets.QAbstractItemView):
                 except:
                     pass
 
-            elif index.column() in [14, 15, 16, 17]: # [x, y, scale, rotation]
+            elif index.column() in [col.X, col.Y, col.SCALE, col.ROTATION, col.ROTATION]:
                 try:
                     icon_node = index.internalPointer()
 
@@ -79,12 +75,22 @@ class SystemManualView(QtWidgets.QAbstractItemView):
 
 
     def rowsAboutToBeRemoved(self, parent_index, start, end):
-        #TODO when this is called those rows still exist so this isn't really delt with correctly
-        #this is almost a start but not there...
-        #if parent_index.internalPointer().typeInfo() == strings.DEVICE_NODE and  index.parent() == self._current_system_index:
-        #    self._device_icons.pop(1)
-        #self.displaySystem(self._current_system_index)
-        pass
+        if hasattr(parent_index.model(), 'mapToSource'):
+            parent_index = parent_index.model().mapToSource(parent_index)
+
+        if parent_index == self._current_system_index:
+            model = parent_index.model()
+
+            device_indexes = []
+            for i in range(start, end+1):
+                device_indexes.append(model.index(i, 0, parent_index))
+
+            for device_index in device_indexes:
+                wid = self._device_icons[device_index.row()]
+                self._scene.removeItem(wid)
+
+            del self._device_icons[start:end+1]
+
 
     def rowsInserted(self, parent_index, start, end):
         self.displaySystem(self._current_system_index)
@@ -104,12 +110,12 @@ class SystemManualView(QtWidgets.QAbstractItemView):
         if node is not None:
             type_info = node.typeInfo()
 
-        if type_info == strings.SYSTEM_NODE:
+        if type_info == typ.SYSTEM_NODE:
             self._current_system_index = index
             self.displaySystem(self._current_system_index)
 
 
-        elif type_info == strings.DEVICE_NODE:
+        elif type_info == typ.DEVICE_NODE:
             if index.parent() != self._current_system_index:
                 self._current_system_index = index.parent()
                 self.displaySystem(self._current_system_index)
@@ -121,7 +127,8 @@ class SystemManualView(QtWidgets.QAbstractItemView):
             self._previous_index = index
             self.setCurrentIndex(index)
 
-
+    def setIconPosition(self, index, pos):
+        self.model().setData(index.siblingAtColumn(col.POS), pos, QtCore.Qt.EditRole)
 
     def displaySystem(self, system_index):
         self._view.resetTransform() #Needed?
@@ -144,7 +151,7 @@ class SystemManualView(QtWidgets.QAbstractItemView):
 
 
         #Add the Device Icons
-        icon_indexes = self.model().indexesOfType(strings.DEVICE_ICON_NODE, system_index)
+        icon_indexes = self.model().indexesOfType(typ.DEVICE_ICON_NODE, system_index)
 
         for icon_index in icon_indexes:
 
@@ -153,9 +160,12 @@ class SystemManualView(QtWidgets.QAbstractItemView):
             renderer = QtSvg.QSvgRenderer(self)
             renderer.load(icon_node.svg)
 
+            #TODO here!
             wid = DeviceIconWidget(renderer)
             wid.setCallback(self.setSelection)
-            wid.setIndex(icon_index.parent())
+            wid.setPosCallback(self.setIconPosition)
+
+            wid.setIndex(icon_index)
             wid.setElementId(icon_node.layer())
 
             wid.setPos(float(icon_node.x) , float(icon_node.y))

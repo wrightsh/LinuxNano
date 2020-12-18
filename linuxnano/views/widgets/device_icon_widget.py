@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtGui, QtCore, QtSvg, QtWidgets
-from linuxnano.strings import strings
-import xml.etree.ElementTree as ET
-
-
 
 class DeviceIconWidget(QtSvg.QGraphicsSvgItem):
     def __init__(self, renderer=None):
@@ -12,16 +8,20 @@ class DeviceIconWidget(QtSvg.QGraphicsSvgItem):
         if renderer is not None:
             self.setSharedRenderer(renderer)
         self.setAcceptHoverEvents(True)
-        #self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
 
         self._callback = None #This method gets called on click to make the parents tree change index
-        self._index = None #index of the device that owns this icon
+        self._pos_callback = None #This method gets called to set the new icon position from draging
+        self._index = None #index of this icon
 
         self._hovering = False
         self._selected = False
 
     def setCallback(self, value):
         self._callback = value
+
+    def setPosCallback(self, value):
+        self._pos_callback = value
 
     def setIndex(self, value):
         self._index = value
@@ -39,12 +39,15 @@ class DeviceIconWidget(QtSvg.QGraphicsSvgItem):
             painter.drawRect(self.boundingRect())
 
     def mouseReleaseEvent(self, event):
-        self._callback(self._index)
-        event.accept()
+        super().mouseReleaseEvent(event)
+        self._callback(self._index.parent())
+        self._pos_callback(self._index, self.scenePos())
+        #event.accept()
 
-    #mouseReleaseEvent needs this
+    #mouseReleaseEvent needs this?
     def mousePressEvent(self, event):
-        event.accept()
+        super().mousePressEvent(event)
+        #event.accept()
 
     def setSelected(self):
         self._selected = True

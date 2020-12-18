@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -.- coding: utf-8 -.-
-import sys
+import sys, json
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 import xml.etree.ElementTree as ET
 from linuxnano.tool_model import ToolModel
 from linuxnano.tool_editor import ToolEditor
 from linuxnano.tool_manual_view import ToolManualView
-from linuxnano.strings import strings
 
 from linuxnano.hardware import HalReader
 
@@ -19,12 +18,13 @@ import gc, pprint
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super().__init__()
+        file = 'tests/tools/basic_tool_1.json'
+        with open(file) as f:
+            json_data = json.load(f)
 
         self.reader = HalReader()
-
-        tree = ET.parse('tests/tools/tool_model_1.xml')
         self.tool_model = ToolModel()
-        self.tool_model.loadTool(tree)
+        self.tool_model.loadJSON(json_data)
 
         self.setWindowTitle('LinuxNano')
         self.resize(800,600)

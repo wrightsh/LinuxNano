@@ -15,7 +15,7 @@ import os.path
 
 
 #from linuxnano.hardware import hardware
-from linuxnano.strings import strings, col
+from linuxnano.strings import strings, col, typ
 from linuxnano.message_box import MessageBox
 from linuxnano.calibration_table_model import CalibrationTableModel
 
@@ -44,7 +44,6 @@ class Node:
 
         self._parent = parent
         self._children = []
-
         self._name = "unknown"
         self._description = ''
 
@@ -186,7 +185,7 @@ class ToolNode(Node):
         super().__init__(parent)
 
     def typeInfo(self):
-        return strings.TOOL_NODE
+        return typ.TOOL_NODE
 
 
 class SystemNode(Node):
@@ -195,7 +194,7 @@ class SystemNode(Node):
         self._background_svg = strings.DEFAULT_SYSTEM_BACKGROUND
 
     def typeInfo(self):
-        return strings.SYSTEM_NODE
+        return typ.SYSTEM_NODE
 
     def data(self, c):
         r = super().data(c)
@@ -245,7 +244,7 @@ class DeviceNode(Node):
 
         '''
     def typeInfo(self):
-        return strings.DEVICE_NODE
+        return typ.DEVICE_NODE
 
     def data(self, c):
         r = super().data(c)
@@ -256,35 +255,17 @@ class DeviceNode(Node):
         super().setData(c, value)
         if c is col.STATUS: self._status = str(value)
 
-
-    ''' TODO: remove???'''
-    #def iconLayerList(self):
-    #    for child in self._children:
-    #        if child.typeInfo() in [strings.DEVICE_ICON_NODE]:
-    #            return child.layers()
-    #    return
-
     def dirty(self):
         return self._is_dirty
 
     def setDirty(self, value):
         self._is_dirty = True if value else False
 
-    #def iconLayer(self):
-        #this returns the current icon layer
-    #    return self.deviceStateTableModel().iconLayerFromState(self._state)
-
-    #def status(self):
-        #this returns the current icon layer
-    #    return self.deviceStateTableModel().statusFromState(self._state)
-
     #def halNodeChanged(self):
     #    states = []
-
     #    for child in self._children:
-    #        if child.typeInfo() in [strings.D_IN_NODE, strings.D_OUT_NODE, strings.A_IN_NODE, strings.A_OUT_NODE]:
+    #        if child.typeInfo() in [typ.D_IN_NODE, typ.D_OUT_NODE, typ.A_IN_NODE, typ.A_OUT_NODE]:
     #            states.append((child.name, child.states))
-
     #    model = self.deviceStateTableModel()
     #    model.setNodeStates(states)
 
@@ -312,11 +293,10 @@ class DeviceIconNode(Node):
         self._min_font_size = 6
         self._max_font_size = 72
 
-        self.svg = 'linuxnano/resources/icons/general/unknown.svg'
-
+        self.svg = strings.DEFAULT_DEVICE_ICON        #'linuxnano/resources/icons/general/unknown.svg'
 
     def typeInfo(self):
-        return strings.DEVICE_ICON_NODE
+        return typ.DEVICE_ICON_NODE
 
     def data(self, c):
         r = super().data(c)
@@ -333,6 +313,9 @@ class DeviceIconNode(Node):
         elif c is col.TEXT_X   : r = self.textX
         elif c is col.TEXT_Y   : r = self.textY
         elif c is col.FONT_SIZE: r = self.fontSize
+
+        elif c is col.POS      : r = QtCore.QPointF(self.x, self.y)
+
 
         return r
 
@@ -351,6 +334,10 @@ class DeviceIconNode(Node):
         elif c is col.TEXT_X    : self.textX    = value
         elif c is col.TEXT_Y    : self.textY    = value
         elif c is col.FONT_SIZE : self.fontSize = value
+
+        elif c is col.POS:
+            self.x = value.x()
+            self.y = value.y()
 
     def layer(self):
         if self._layer in self.layers().names:
@@ -575,7 +562,7 @@ class DigitalInputNode(HalNode):
         self._on_name = ''
 
     def typeInfo(self):
-        return strings.D_IN_NODE
+        return typ.D_IN_NODE
 
     def data(self, c):
         r = super().data(c)
@@ -624,7 +611,7 @@ class DigitalOutputNode(DigitalInputNode):
         self._name = 'Digital_Output_Node'
 
     def typeInfo(self):
-        return strings.D_OUT_NODE
+        return typ.D_OUT_NODE
 
     def halPins(self):
         all_pins = HalNode.hal_pins #list of (name, type, dir)
@@ -664,7 +651,7 @@ class AnalogInputNode(HalNode):
 
 
     def typeInfo(self):
-        return strings.A_IN_NODE
+        return typ.A_IN_NODE
 
     def calibrationTableModel(self):
         return self._calibration_table_model
@@ -758,7 +745,7 @@ class AnalogOutputNode(AnalogInputNode):
         self._name = 'Analog_Output_Node'
 
     def typeInfo(self):
-        return strings.A_OUT_NODE
+        return typ.A_OUT_NODE
 
     def halPins(self):
         all_pins = HalNode.hal_pins #list of (name, type, dir)
@@ -781,7 +768,7 @@ class BoolVarNode(Node):
         self._view_only = True
 
     def typeInfo(self):
-        return strings.BOOL_VAR_NODE
+        return typ.BOOL_VAR_NODE
 
     def data(self, c):
         r = super().data(c)
@@ -796,6 +783,7 @@ class BoolVarNode(Node):
 
     def setData(self, c, value):
         super().setData(c, value)
+        print("Col: ",c, " - ",value)
         if c is col.VALUE:
             self._val = True if value == True else False
             if self.parent():
@@ -858,7 +846,7 @@ class FloatVarNode(Node):
         self._view_only = True
 
     def typeInfo(self):
-        return strings.FLOAT_VAR_NODE
+        return typ.FLOAT_VAR_NODE
 
     def data(self, c):
         r = super().data(c)

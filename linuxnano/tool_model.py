@@ -191,6 +191,11 @@ class ToolModel(QtCore.QAbstractItemModel):
             if index.column() == col.HAL_PIN and node.typeInfo() in typ.HAL_NODES:
                 self.dataChanged.emit(index.siblingAtColumn(col.HAL_PIN_TYPE), index.siblingAtColumn(col.HAL_PIN_TYPE))
 
+
+            if index.column() == col.POS and node.typeInfo() == typ.DEVICE_ICON_NODE:
+                self.dataChanged.emit(index.siblingAtColumn(col.X), index.siblingAtColumn(col.X))
+                self.dataChanged.emit(index.siblingAtColumn(col.Y), index.siblingAtColumn(col.Y))
+
             return True
 
         return False
@@ -310,8 +315,6 @@ class LeafFilterProxyModel(QtCore.QSortFilterProxyModel):
         # Finally, check if any of the children match
         return self.has_accepted_children(row_num, source_parent)
 
-
-
     def filter_accepts_row_itself(self, row_num, parent):
         return super(LeafFilterProxyModel, self).filterAcceptsRow(row_num, parent)
 
@@ -339,13 +342,8 @@ class LeafFilterProxyModel(QtCore.QSortFilterProxyModel):
 
         return False
 
-
     def removeRows(self, row, count, index):
-        self.sourceModel().removeRows(row,count, index)
-
-
-    #def iconChildrenForSystem(self, index):
-    #    return self.sourceModel().iconChildrenForSystem(index)
+        self.sourceModel().removeRows(row, count, index)
 
     def insertChild(self, parent_index, node_type, preferred_row = None):
         return self.sourceModel().insertChild(parent_index, node_type, preferred_row)

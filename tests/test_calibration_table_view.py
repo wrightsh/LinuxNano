@@ -11,9 +11,7 @@ from linuxnano.flags import TestingFlags
 from linuxnano.views.widgets.calibration_table_view import CalibrationTableView
 from linuxnano.calibration_table_model import CalibrationTableModel
 
-
 ################# View Tests ####################
-
 def excepthook(exc_type, exc_value, exc_tb):
     tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
     MessageBox(tb)

@@ -100,12 +100,8 @@ class HalReader():
         pins.pop(0) # "Component Pins:""
         pins.pop(-1) # Empty line
 
-
-
         #If we don't lose the reference to the initial list then everything will update correctly
-        #del DigitalOutputNode.hal_pins[1:]
-        #del DigitalInputNode.hal_pins[1:]
-        del HalNode.hal_pins[]
+        HalNode.hal_pins.clear()
 
         for pin in pins:
             line = pin.decode('utf-8')

@@ -2,13 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import pyqtProperty
-from linuxnano.strings import strings, col, typ
-import subprocess
+from linuxnano.strings import col, typ
+from linuxnano.views.widgets.scientific_spin import ScientificDoubleSpinBox
 
 manual_device_view_base, manual_device_view_form = uic.loadUiType("linuxnano/views/DeviceManualView.ui")
-
-from linuxnano.views.widgets.scientific_spin import ScientificDoubleSpinBox
 
 class DeviceManualView(manual_device_view_base, manual_device_view_form):
     def __init__(self, parent=None):
@@ -39,30 +36,33 @@ class DeviceManualView(manual_device_view_base, manual_device_view_form):
         self._mapper.setCurrentModelIndex(index)
 
         #Look for any BoolVarNode or FloatVarNodes
-        for row in range(self._model.rowCount(index)):
-            child_index = index.child(row,0)
-            wid = None
+        try:
+            for row in range(self._model.rowCount(index)):
+                child_index = index.child(row,0)
+                wid = None
 
-            node =  child_index.internalPointer()
+                node =  child_index.internalPointer()
 
-            #A user never directly sets IO
-            if node.typeInfo() in [typ.D_IN_NODE, typ.D_OUT_NODE]:
-                wid = ManualBoolView()
+                #A user never directly sets IO
+                if node.typeInfo() in [typ.D_IN_NODE, typ.D_OUT_NODE]:
+                    wid = ManualBoolView()
 
-            elif node.typeInfo() in [typ.A_IN_NODE, typ.A_OUT_NODE]:
-                wid = ManualFloatView()
+                elif node.typeInfo() in [typ.A_IN_NODE, typ.A_OUT_NODE]:
+                    wid = ManualFloatView()
 
-            elif node.typeInfo() == typ.BOOL_VAR_NODE:
-                wid = ManualBoolView() if node.viewOnly else ManualBoolSet()
+                elif node.typeInfo() == typ.BOOL_VAR_NODE:
+                    wid = ManualBoolView() if node.viewOnly else ManualBoolSet()
 
-            elif node.typeInfo() == typ.FLOAT_VAR_NODE:
-                wid = ManualFloatView() if node.viewOnly else ManualFloatSet()
+                elif node.typeInfo() == typ.FLOAT_VAR_NODE:
+                    wid = ManualFloatView() if node.viewOnly else ManualFloatSet()
 
-            if wid is not None:
-                wid.setModel(child_index.model())
-                wid.setRootIndex(index)
-                wid.setCurrentModelIndex(child_index)
-                self.ui_wids.addWidget(wid)
+                if wid is not None:
+                    wid.setModel(child_index.model())
+                    wid.setRootIndex(index)
+                    wid.setCurrentModelIndex(child_index)
+                    self.ui_wids.addWidget(wid)
+        except:
+            pass
 
         self.ui_wids.addStretch(1)
 
@@ -89,6 +89,7 @@ class ManualBoolView(QtWidgets.QWidget):
         hbox = QtWidgets.QHBoxLayout()
         self.setLayout(hbox)
 
+        self._val = False
         self.ui_name = QtWidgets.QLabel('unknown')
         self.ui_val = QtWidgets.QLabel('?')
         self._off_name = ""
@@ -117,10 +118,11 @@ class ManualBoolView(QtWidgets.QWidget):
 
     @QtCore.pyqtProperty(int)
     def value(self):
-        pass
+        return self._val
 
     @value.setter
     def value(self, value):
+        self._val = value
         txt = self._on_name if value else self._off_name
         self.ui_val.setText(txt)
 
@@ -256,8 +258,9 @@ class ManualFloatView(QtWidgets.QWidget):
         self._display_digits = index.internalPointer().displayDigits
         self._display_scientific = index.internalPointer().displayScientific
 
-    @pyqtProperty(QtCore.QVariant)
-    def val(self): return self._val
+    @QtCore.pyqtProperty(float)
+    def val(self):
+        return self._val
 
     @val.setter
     def val(self, value):

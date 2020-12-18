@@ -22,6 +22,7 @@ class col():
     TEXT_X    = 18
     TEXT_Y    = 19
     FONT_SIZE = 20
+    POS       = 21
 
 
 
@@ -142,8 +143,8 @@ class strings():
 
 
 
-    DEFAULT_SYSTEM_BACKGROUND  =  "/usr/local/LinuxNano/resources/icons/unknown.svg"
-    DEFAULT_DEVICE_ICON        = '/usr/local/LinuxNano/resources/icons/general/unknown.svg'
+    DEFAULT_SYSTEM_BACKGROUND  =  'linuxnano/resources/icons/general/generic_system_background.svg'
+    DEFAULT_DEVICE_ICON        = 'linuxnano/resources/icons/general/unknown.svg'
 
 
 

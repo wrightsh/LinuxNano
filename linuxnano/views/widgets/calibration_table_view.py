@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from PyQt5 import QtGui, QtCore, QtWidgets
-
-import linuxnano.strings
 from linuxnano.calibration_table_model import CalibrationTableModel
 from linuxnano.views.widgets.scientific_spin import ScientificDoubleSpinBox
 
 
-
 class CalibrationTableView(QtWidgets.QTableView):
-
     def __init__(self, parent=None):
         super().__init__(parent)
-
         self.menu_add_row_before = "Add Row Before"
         self.menu_add_row_after  = "Add Row After"
         self.menu_remove_row     = "Remove Row"
@@ -28,7 +23,6 @@ class CalibrationTableView(QtWidgets.QTableView):
 
     def getModel(self):
         return self.model()
-
 
     def addRowBeforeSelected(self):
         if len(self.selectedIndexes()) == 1:
@@ -72,15 +66,9 @@ class CalibrationTableView(QtWidgets.QTableView):
         font = QtGui.QFont("Helvetica", 14)
         self.setFont(font)
 
-
-        #if   self.model().parentNodeType() == strings.A_IN_NODE: pass
-        #elif self.model().parentNodeType() == strings.A_OUT_NODE:
-        #    for row in range(1, self.model().rowCount()):
-        #        self.openPersistentEditor(self.model().index(row, is_used_column))
     #def reset(self):
     #    super(CalibrationTableView, self).reset()
     #    self.__setupGUI()
-
 
     calibrationTableView = QtCore.pyqtProperty(type(CalibrationTableModel()), getModel, setModel)
 

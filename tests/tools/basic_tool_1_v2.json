@@ -8,14 +8,14 @@
                         {
                             "children": [],
                             "description": "",
+                            "fontSize": 12,
                             "hasText": true,
                             "name": "Icon",
                             "rotation": 22.5,
                             "scale": 1.4,
                             "svg": "linuxnano/resources/icons/general/unknown.svg",
-                            "fontSize": 12,
-                            "textX": 0,
-                            "textY": 0,
+                            "textX": 0.0,
+                            "textY": 0.0,
                             "type_info": "Device_Icon_Node",
                             "x": 50.0,
                             "y": 70.0
@@ -23,19 +23,19 @@
                         {
                             "children": [],
                             "description": "",
+                            "halPin": "",
+                            "name": "is_closed",
                             "offName": "Close",
                             "onName": "Open",
-                            "halPin": "d_in_3",
-                            "name": "is_closed",
                             "type_info": "Digital_Input_Node"
                         },
                         {
                             "children": [],
                             "description": "",
-                            "offName": "down",
-                            "onName": "up",
                             "halPin": "",
                             "name": "power",
+                            "offName": "down",
+                            "onName": "up",
                             "type_info": "Digital_Output_Node"
                         },
                         {
@@ -87,13 +87,14 @@
                             "units": ""
                         },
                         {
-                            "allowManual": true,
                             "children": [],
                             "description": "some description for this variable",
+                            "enableManual": true,
                             "name": "my_bool_var",
                             "offName": "not_ready",
                             "onName": "ready",
-                            "type_info": "Bool_Var_Node"
+                            "type_info": "Bool_Var_Node",
+                            "viewOnly": true
                         },
                         {
                             "children": [],
@@ -101,11 +102,12 @@
                             "displayDigits": 1,
                             "displayScientific": false,
                             "enableManual": true,
-                            "max": 10,
-                            "min": -10,
+                            "max": 10.0,
+                            "min": -10.0,
                             "name": "mfc_scale",
                             "type_info": "Float_Var_Node",
-                            "units": "mTorr/V"
+                            "units": "mTorr/V",
+                            "viewOnly": true
                         }
                     ],
                     "description": "This is a type of pump.",
@@ -116,7 +118,7 @@
             "description": "This is part of a tool, like a chamber or loadlock.",
             "name": "Chamber_A",
             "type_info": "System_Node"
-                }
+        }
     ],
     "description": "This is the whole tool.",
     "name": "Evaporator",

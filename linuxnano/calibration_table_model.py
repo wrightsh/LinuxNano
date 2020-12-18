@@ -6,7 +6,6 @@ import copy
 import numpy as np
 from scipy.interpolate import interp1d
 
-
 class CalibrationTableModel(QtCore.QAbstractTableModel):
     '''Stores analog value calibration, i.e. HAL units to software units
         - HAL: An analog value from HAL

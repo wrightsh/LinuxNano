@@ -5,9 +5,7 @@ import pytest
 from PyQt5 import QtSvg
 from linuxnano.flags import TestingFlags
 from linuxnano.message_box import MessageBox
-
 from linuxnano.views.widgets.device_icon_widget import DeviceIconWidget
-
 
 def test_init(qtbot):
     svg = 'linuxnano/resources/icons/general/unknown.svg'
