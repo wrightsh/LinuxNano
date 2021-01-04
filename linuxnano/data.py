@@ -13,9 +13,10 @@ import xml.etree.ElementTree as ET
 import json
 import os.path
 
+from linuxnano.bt_model import BTModel
 
 #from linuxnano.hardware import hardware
-from linuxnano.strings import strings, col, typ
+from linuxnano.strings import defaults, col, typ
 from linuxnano.message_box import MessageBox
 from linuxnano.calibration_table_model import CalibrationTableModel
 
@@ -191,7 +192,8 @@ class ToolNode(Node):
 class SystemNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._background_svg = strings.DEFAULT_SYSTEM_BACKGROUND
+        self._background_svg = defaults.SYSTEM_BACKGROUND
+        self._movable_icons = False
 
     def typeInfo(self):
         return typ.SYSTEM_NODE
@@ -199,12 +201,17 @@ class SystemNode(Node):
     def data(self, c):
         r = super().data(c)
 
-        if c is col.BACKGROUND_SVG: r = self.backgroundSVG
+        if   c is col.BACKGROUND_SVG: r = self.backgroundSVG
+        elif c is col.MOVABLE_ICONS : r = self.movableIcons()
         return r
 
     def setData(self, c, value):
         super().setData(c, value)
-        if c is col.BACKGROUND_SVG: self.backgroundSVG = value
+        if   c is col.BACKGROUND_SVG: self.backgroundSVG = value
+        elif c is col.MOVABLE_ICONS : self._movable_icons = value
+
+    def movableIcons(self):
+        return self._movable_icons
 
     def backgroundSVG():
         def fget(self): return self._background_svg
@@ -212,7 +219,7 @@ class SystemNode(Node):
             if isinstance(value, str) and os.path.isfile(value):
                 self._background_svg = value
             else:
-                self._background_svg =  strings.DEFAULT_SYSTEM_BACKGROUND
+                self._background_svg =  defaults.SYSTEM_BACKGROUND
         return locals()
     backgroundSVG = property(**backgroundSVG())
 
@@ -224,6 +231,14 @@ class DeviceNode(Node):
         super().__init__(parent)
         self._status = ''
         self._is_dirty = False
+        self._bt_model = BTModel()
+
+        file = 'tests/behaviors/test_1.json'
+        with open(file) as f:
+            json_data = json.load(f)
+
+        self._bt_model.loadJSON(json_data)
+
 
         '''
         Device Children:
@@ -237,6 +252,8 @@ class DeviceNode(Node):
 
         a device has a:
             - a behavior tree
+                - a devices bt has to know the children of the device
+
                 - on load it needs to check if everything it has in it actually exists
                 - the hardware  file will be going through evaluating the branches/leaves
 
@@ -270,7 +287,7 @@ class DeviceNode(Node):
     #    model.setNodeStates(states)
 
 
-
+#TODO: Add background and font color and left/right align
 class DeviceIconNode(Node):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -293,7 +310,7 @@ class DeviceIconNode(Node):
         self._min_font_size = 6
         self._max_font_size = 72
 
-        self.svg = strings.DEFAULT_DEVICE_ICON        #'linuxnano/resources/icons/general/unknown.svg'
+        self.svg = defaults.DEVICE_ICON        #'linuxnano/resources/icons/general/unknown.svg'
 
     def typeInfo(self):
         return typ.DEVICE_ICON_NODE
@@ -316,7 +333,6 @@ class DeviceIconNode(Node):
 
         elif c is col.POS      : r = QtCore.QPointF(self.x, self.y)
 
-
         return r
 
     def setData(self, c, value):
@@ -338,6 +354,10 @@ class DeviceIconNode(Node):
         elif c is col.POS:
             self.x = value.x()
             self.y = value.y()
+
+
+    def text(self):
+        return self._text
 
     def layer(self):
         if self._layer in self.layers().names:
@@ -639,7 +659,7 @@ class AnalogInputNode(HalNode):
         self._val = 0
         self._units = ''
 
-        self._display_digits = strings.A_DISPLAY_DIGITS_DEFAULT
+        self._display_digits = defaults.A_DISPLAY_DIGITS
         self._display_scientific = False
 
         self._calibration_table_model = CalibrationTableModel()
@@ -708,7 +728,7 @@ class AnalogInputNode(HalNode):
     def displayDigits():
         def fget(self): return self._display_digits
         def fset(self, value):
-            self._display_digits = clamp(int(value), 0, strings.A_DISPLAY_DIGITS_MAX)
+            self._display_digits = clamp(int(value), 0, defaults.A_DISPLAY_DIGITS_MAX)
             self.updateScaleFactor()
         return locals()
     displayDigits = property(**displayDigits())
@@ -840,7 +860,7 @@ class FloatVarNode(Node):
         self._min = 0
         self._max = 0
         self._units = ''
-        self._display_digits = strings.A_DISPLAY_DIGITS_DEFAULT
+        self._display_digits = defaults.A_DISPLAY_DIGITS
         self._display_scientific = False
         self._enable_manual = True
         self._view_only = True
@@ -899,7 +919,7 @@ class FloatVarNode(Node):
     def displayDigits():
         def fget(self): return self._display_digits
         def fset(self, value):
-            self._display_digits = clamp(int(value), 0, strings.A_DISPLAY_DIGITS_MAX)
+            self._display_digits = clamp(int(value), 0, defaults.A_DISPLAY_DIGITS_MAX)
         return locals()
     displayDigits = property(**displayDigits())
 

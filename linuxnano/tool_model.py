@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtGui
 
-from linuxnano.strings import strings, col, typ
+from linuxnano.strings import col, typ
 from linuxnano.data import Node, ToolNode, SystemNode, DeviceNode, DeviceIconNode, DigitalInputNode, DigitalOutputNode, AnalogInputNode, AnalogOutputNode
 from linuxnano.data import BoolVarNode, FloatVarNode
 from linuxnano.message_box import MessageBox

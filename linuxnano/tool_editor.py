@@ -139,6 +139,7 @@ class SystemEditor(system_base, system_form):
 
         self.mapper.setModel(model)
         self.mapper.addMapping(self.ui_background_svg, col.SVG)
+        self.mapper.addMapping(self.ui_movable_icons, col.MOVABLE_ICONS)
 
 
     def setSelection(self, current):

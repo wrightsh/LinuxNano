@@ -7,7 +7,6 @@ from linuxnano.views.widgets.tool_tree_view import ToolTreeView
 from linuxnano.tool_model import LeafFilterProxyModel
 from linuxnano.views.widgets.device_manual_view import DeviceManualView
 
-from linuxnano.strings import strings
 
 tool_manual_view_base, tool_manual_view_form  = uic.loadUiType("linuxnano/views/ToolManualView.ui")
 

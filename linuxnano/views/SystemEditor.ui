@@ -13,35 +13,31 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="minimumSize">
-        <size>
-         <width>75</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Background SVG</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="ui_background_svg"/>
-     </item>
-     <item>
-      <widget class="QPushButton" name="ui_select_image">
-       <property name="text">
-        <string>Select Image</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="2">
+    <widget class="QPushButton" name="ui_select_image">
+     <property name="text">
+      <string>Select Image</string>
+     </property>
+    </widget>
    </item>
-   <item>
+   <item row="0" column="1">
+    <widget class="QLineEdit" name="ui_background_svg"/>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="minimumSize">
+      <size>
+       <width>75</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>Background SVG</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="3">
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <spacer name="horizontalSpacer_2">
@@ -99,12 +95,22 @@
      </item>
     </layout>
    </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Movable Icons</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QCheckBox" name="ui_movable_icons">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>ui_background_svg</tabstop>
-  <tabstop>ui_select_image</tabstop>
- </tabstops>
  <customwidgets>
   <customwidget>
    <class>SVGWidget</class>
@@ -113,6 +119,10 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>ui_background_svg</tabstop>
+  <tabstop>ui_select_image</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

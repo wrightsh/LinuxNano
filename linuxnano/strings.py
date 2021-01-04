@@ -6,6 +6,7 @@ class col():
 
     #SystemNode
     BACKGROUND_SVG = 10
+    MOVABLE_ICONS = 11
 
     #DeviceNode
     STATUS = 10
@@ -90,6 +91,12 @@ class typ():
 
     BOOL_VAR_NODE = 'Bool_Var_Node'
     FLOAT_VAR_NODE = 'Float_Var_Node'
+
+class defaults():
+    SYSTEM_BACKGROUND    =  'linuxnano/resources/icons/general/generic_system_background.svg'
+    DEVICE_ICON          = 'linuxnano/resources/icons/general/unknown.svg'
+    A_DISPLAY_DIGITS     = 2
+    A_DISPLAY_DIGITS_MAX = 10
 
 class strings():
 

@@ -8,7 +8,7 @@ class DeviceIconWidget(QtSvg.QGraphicsSvgItem):
         if renderer is not None:
             self.setSharedRenderer(renderer)
         self.setAcceptHoverEvents(True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
 
         self._callback = None #This method gets called on click to make the parents tree change index
         self._pos_callback = None #This method gets called to set the new icon position from draging
@@ -25,6 +25,12 @@ class DeviceIconWidget(QtSvg.QGraphicsSvgItem):
 
     def setIndex(self, value):
         self._index = value
+
+    def setMovable(self, value):
+        if value:
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+        else:
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
 
     def paint(self, painter, option, wid):
         super().paint(painter, option, wid)

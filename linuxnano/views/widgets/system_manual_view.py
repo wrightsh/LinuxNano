@@ -32,34 +32,34 @@ class SystemManualView(QtWidgets.QAbstractItemView):
         self._view.fitInView(self._scene_box, QtCore.Qt.KeepAspectRatio)
 
 
-    #TODO will this called too often?
     def dataChanged(self, index_top_left, index_bottom_right, roles):
-        index = index_top_left
+        index = index_top_left #TODO
         tool_model = self.model()
 
-        if index == self._current_system_index and index.column() == col.BACKGROUND_SVG:
-            self.setBackground(tool_model.data(index, QtCore.Qt.DisplayRole))
+        try:
+            #TODO not quite sure why the index isn't the same as the current_system_index, but they point to the same place
+            if index.internalPointer() == self._current_system_index.internalPointer():
+                if index.column() == col.BACKGROUND_SVG:
+                    self.setBackground(tool_model.data(index, QtCore.Qt.DisplayRole))
 
-        elif index.internalPointer().typeInfo() == typ.DEVICE_ICON_NODE and  index.parent().parent() == self._current_system_index:
-            if index.column() == col.SVG:
-                try:
+                elif index.column() == col.MOVABLE_ICONS:
+                    for wid in self._device_icons:
+                        wid.setMovable(index.internalPointer().movableIcons())
+
+
+            elif index.internalPointer().typeInfo() == typ.DEVICE_ICON_NODE and  index.parent().parent() == self._current_system_index:
+                if index.column() == col.SVG:
                     icon_node = index.internalPointer()
                     wid = self._device_icons[index.parent().row()]
                     wid.renderer().load(icon_node.svg)
                     wid.setElementId(icon_node.layer())
-                except:
-                    pass
 
-            elif index.column() == col.LAYER:
-                try:
+                elif index.column() == col.LAYER:
                     icon_node = index.internalPointer()
                     wid = self._device_icons[index.parent().row()]
                     wid.setElementId(icon_node.layer())
-                except:
-                    pass
 
-            elif index.column() in [col.X, col.Y, col.SCALE, col.ROTATION, col.ROTATION]:
-                try:
+                elif index.column() in [col.X, col.Y, col.SCALE, col.ROTATION, col.ROTATION, col.TEXT_X, col.TEXT_Y, col.FONT_SIZE]:
                     icon_node = index.internalPointer()
 
                     #Since each device has to have a single icon the parents row is the same as this index
@@ -67,9 +67,43 @@ class SystemManualView(QtWidgets.QAbstractItemView):
                     wid.setPos(float(icon_node.x) , float(icon_node.y))
                     wid.setRotation(float(icon_node.rotation))
                     wid.setScale(float(icon_node.scale))
-                except:
-                    pass
 
+
+                    if wid.text_wid is not None:
+                        wid.text_wid.setPos(float(icon_node.x + icon_node.textX) , float(icon_node.y + icon_node.textY))
+
+                        font = wid.text_wid.font()
+                        font.setPointSize(icon_node.fontSize)
+                        wid.text_wid.setFont(font)
+
+
+                elif index.column() in [col.TEXT]:
+                    icon_node = index.internalPointer()
+                    wid = self._device_icons[index.parent().row()]
+                    text_wid = wid.text_wid.widget()
+                    text_wid.setText(icon_node.text())
+
+
+                elif index.column() in [col.HAS_TEXT]:
+                    icon_node = index.internalPointer()
+                    wid = self._device_icons[index.parent().row()]
+
+                    if icon_node.hasText:
+                        wid.text_wid = self._scene.addWidget(QtWidgets.QLabel(icon_node.text()))
+                        wid.text_wid.setPos(float(icon_node.x + icon_node.textX) , float(icon_node.y + icon_node.textY))
+
+                        font = wid.text_wid.font()
+                        font.setPointSize(icon_node.fontSize)
+                        wid.text_wid.setFont(font)
+                        wid.text_wid = text_wid
+
+                    else:
+                        self._scene.removeItem(wid.text_wid)
+                        wid.text_wid = None
+
+
+        except:
+            pass
 
             #print(index_top_left.row(), index_top_left.column(), index_bottom_right.row(), index_bottom_right.column())
 
@@ -96,7 +130,7 @@ class SystemManualView(QtWidgets.QAbstractItemView):
         self.displaySystem(self._current_system_index)
 
     #This abstract view needs to emit a currentChanged(
-    def setSelection(self, index):#, old):
+    def setSelection(self, index):
         if hasattr(index.model(), 'mapToSource'):
             index = index.model().mapToSource(index)
 
@@ -140,6 +174,7 @@ class SystemManualView(QtWidgets.QAbstractItemView):
 
         system_node = system_index.internalPointer()
         svg_image = system_node.backgroundSVG
+        movable = system_node.movableIcons()
 
         #Border line around background image
         rectangle = QtWidgets.QGraphicsRectItem(self._scene_box)
@@ -160,13 +195,12 @@ class SystemManualView(QtWidgets.QAbstractItemView):
             renderer = QtSvg.QSvgRenderer(self)
             renderer.load(icon_node.svg)
 
-            #TODO here!
             wid = DeviceIconWidget(renderer)
             wid.setCallback(self.setSelection)
             wid.setPosCallback(self.setIconPosition)
-
             wid.setIndex(icon_index)
             wid.setElementId(icon_node.layer())
+            wid.setMovable(movable)
 
             wid.setPos(float(icon_node.x) , float(icon_node.y))
             wid.setRotation(float(icon_node.rotation))
@@ -175,18 +209,14 @@ class SystemManualView(QtWidgets.QAbstractItemView):
             self._device_icons.append(wid)
             self._scene.addItem(wid)
 
-            #if icon_node.numberNode is not None:
-            #    #TODO: remove this block
-            #    spin = QtWidgets.QLabel('1.23 mTorr')
-            #    #self._data_mappers[-1].addMapping(spin, 12)
-            #    prox_spin = self._scene.addWidget(spin)
+            if icon_node.hasText:
+                text_wid = self._scene.addWidget(QtWidgets.QLabel(icon_node.text()))
+                text_wid.setPos(float(icon_node.x + icon_node.textX) , float(icon_node.y + icon_node.textY))
 
-            #    number_x = x + float(icon_node.numberX)
-            #    number_y = y + float(icon_node.numberY)
-            #    transform = QtGui.QTransform()
-            #    transform.translate( number_x , number_y)
-            #    prox_spin.setTransform( transform )
-
+                font = text_wid.font()
+                font.setPointSize(icon_node.fontSize)
+                text_wid.setFont(font)
+                wid.text_wid = text_wid
 
         #Resize the view
         self._view.fitInView(self._scene_box, QtCore.Qt.KeepAspectRatio)
